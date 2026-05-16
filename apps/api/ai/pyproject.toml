@@ -5,7 +5,7 @@ description = "Isolation Forest anomaly detection over Banexcoin QR transactions
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.118.0",
+    "fastapi>=0.136.1",
     "uvicorn[standard]>=0.34.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
