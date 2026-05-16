@@ -1,20 +1,8 @@
 services:
-  private-database:
+  mongo:
     environment:
-      - POSTGRES_DB=private-db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - MONGO_INITDB_DATABASE=banexcoin
     ports:
-      - '5432'
+      - '27017:27017'
     volumes:
-      - ./.containers/private-database-data:/var/lib/postgresql/data
-
-  public-database:
-    environment:
-      - POSTGRES_DB=public-db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - '5432'
-    volumes:
-      - ./.containers/public-database-data:/var/lib/postgresql/data
+      - ./.containers/mongo-data:/data/db

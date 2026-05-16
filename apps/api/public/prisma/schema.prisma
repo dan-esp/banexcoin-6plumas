@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+model User {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  account_number Int      @unique
+  alias          String   @unique
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  transactions         Transaction[]
+  monthly_aggregations MonthlyAggregation[]
+  disbursements        Disbursement[]
+}
+
+model Transaction {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  transaction_id    String   @unique
+  account_number    Int
+  alias             String
+  cotizacion_number Int
+  fecha_creacion    DateTime
+  monto_bs          Float
+  monto_usdt        Float
+  tipo_cambio       Float
+  comision          Float
+  is_anomaly        Boolean?
+  anomaly_score     Float?
+  import_run_id     String?  @db.ObjectId
+  created_at        DateTime @default(now())
+
+  user User @relation(fields: [account_number], references: [account_number])
+}
+
+model MonthlyAggregation {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  account_number Int
+  alias          String
+  year           Int
+  month          Int
+  total_bs       Float
+  total_usdt     Float
+  tx_count       Int
+  tier           String
+  cashback_rate  Float
+  cashback_bs    Float
+  cashback_usdt  Float
+  updated_at     DateTime @updatedAt
+
+  user User @relation(fields: [account_number], references: [account_number])
+
+  @@unique([account_number, year, month])
+}
+
+model CashbackRun {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  year                Int
+  month               Int
+  status              String
+  total_users         Int
+  total_cashback_usdt Float
+  approved_by         String?
+  approved_at         DateTime?
+  exported_at         DateTime?
+  created_at          DateTime  @default(now())
+
+  disbursements Disbursement[]
+
+  @@unique([year, month])
+}
+
+model Disbursement {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  cashback_run_id String   @db.ObjectId
+  account_number  Int
+  alias           String
+  tier            String
+  cashback_usdt   Float
+  status          String
+  created_at      DateTime @default(now())
+
+  cashback_run CashbackRun @relation(fields: [cashback_run_id], references: [id])
+  user         User        @relation(fields: [account_number], references: [account_number])
+}

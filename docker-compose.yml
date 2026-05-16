@@ -1,17 +1,9 @@
 services:
-  private-database:
-    image: postgres:17
-    container_name: banexcoin.private-database
+  mongo:
+    image: mongo:8
+    container_name: banexcoin.mongo
     ports:
-      - '5440:5432'
-    networks:
-      - banexcoin-network
-
-  public-database:
-    image: postgres:17
-    container_name: banexcoin.public-database
-    ports:
-      - '5441:5432'
+      - '27017:27017'
     networks:
       - banexcoin-network
 

@@ -11,43 +11,25 @@ name: banexcoin-prod
 
 services:
   # ── Infra ───────────────────────────────────────────────────────────────
-  private-database:
-    image: postgres:17
-    container_name: banexcoin.prod.private-db
+  mongo:
+    image: mongo:8
+    container_name: banexcoin.prod.mongo
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${PRIVATE_DB_NAME:-private}
-      POSTGRES_USER: ${PRIVATE_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${PRIVATE_DB_PASSWORD:?PRIVATE_DB_PASSWORD required}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?MONGO_USER required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD required}
+      MONGO_INITDB_DATABASE: banexcoin
     ports:
-      - '${PRIVATE_DB_HOST_PORT:-5440}:5432'
+      - '${MONGO_HOST_PORT:-27017}:27017'
     volumes:
-      - private-db-data:/var/lib/postgresql/data
+      - mongo-data:/data/db
     networks: [banexcoin-prod]
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${PRIVATE_DB_USER:-postgres} -d ${PRIVATE_DB_NAME:-private}']
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 10
-
-  public-database:
-    image: postgres:17
-    container_name: banexcoin.prod.public-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${PUBLIC_DB_NAME:-public}
-      POSTGRES_USER: ${PUBLIC_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${PUBLIC_DB_PASSWORD:?PUBLIC_DB_PASSWORD required}
-    ports:
-      - '${PUBLIC_DB_HOST_PORT:-5441}:5432'
-    volumes:
-      - public-db-data:/var/lib/postgresql/data
-    networks: [banexcoin-prod]
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${PUBLIC_DB_USER:-postgres} -d ${PUBLIC_DB_NAME:-public}']
-      interval: 10s
-      timeout: 3s
-      retries: 10
+      start_period: 20s
 
   # ── Apps ────────────────────────────────────────────────────────────────
   ai:
@@ -85,7 +67,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      DATABASE_URL: postgres://${PRIVATE_DB_USER:-postgres}:${PRIVATE_DB_PASSWORD}@private-database:5432/${PRIVATE_DB_NAME:-private}
+      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/banexcoin?authSource=admin
       AI_SERVICE_URL: http://ai:8080
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
       JWT_ISSUER: ${JWT_ISSUER:-banexcoin}
@@ -93,7 +75,7 @@ services:
     ports:
       - '${PRIVATE_API_HOST_PORT:-4000}:8080'
     depends_on:
-      private-database:
+      mongo:
         condition: service_healthy
       ai:
         condition: service_healthy
@@ -115,13 +97,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      DATABASE_URL: postgres://${PUBLIC_DB_USER:-postgres}:${PUBLIC_DB_PASSWORD}@public-database:5432/${PUBLIC_DB_NAME:-public}
+      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/banexcoin?authSource=admin
       PRIVATE_API_URL: http://private-api:8080
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - '${PUBLIC_API_HOST_PORT:-5000}:8080'
     depends_on:
-      public-database:
+      mongo:
         condition: service_healthy
       private-api:
         condition: service_started
@@ -167,6 +149,5 @@ networks:
     driver: bridge
 
 volumes:
-  private-db-data:
-  public-db-data:
+  mongo-data:
   ai-data:

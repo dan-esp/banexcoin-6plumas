@@ -18,14 +18,13 @@ pnpm prod:nuke                   # stop + remove + drop volúmenes (reset comple
 
 Default de puertos (modificables vía `.env.prod`):
 
-| Servicio          | URL                    |
-| ----------------- | ---------------------- |
-| Frontend          | http://localhost:3000  |
-| Public API        | http://localhost:5000  |
-| Private API       | http://localhost:4000  |
-| AI (FastAPI)      | http://localhost:8081  |
-| Postgres privado  | localhost:5440         |
-| Postgres público  | localhost:5441         |
+| Servicio     | URL                    |
+| ------------ | ---------------------- |
+| Frontend     | http://localhost:3000  |
+| Public API   | http://localhost:5000  |
+| Private API  | http://localhost:4000  |
+| AI (FastAPI) | http://localhost:8081  |
+| MongoDB      | localhost:27017        |
 
 Endpoints de smoke test:
 
@@ -50,25 +49,25 @@ Estas viajan como `ARG` al `Dockerfile` del frontend y quedan **incrustadas** en
 
 ### 2.2 Runtime — `private-api` (NestJS)
 
-| Variable           | Obligatoria | Default                                    | Notas                                  |
-| ------------------ | ----------- | ------------------------------------------ | -------------------------------------- |
-| `PORT`             |             | `8080`                                     | Puerto interno                         |
-| `NODE_ENV`         |             | `production`                               |                                        |
-| `DATABASE_URL`     | ✅          | `postgres://…@private-database:5432/...`   | Postgres del servicio privado          |
-| `AI_SERVICE_URL`   | ✅          | `http://ai:8080`                           | URL interna al servicio AI             |
-| `JWT_SECRET`       | ✅          | —                                          | String aleatorio fuerte (32+ bytes)    |
-| `JWT_ISSUER`       |             | `banexcoin`                                |                                        |
-| `JWT_AUDIENCE`     |             | `banexcoin-internal`                       |                                        |
+| Variable           | Obligatoria | Default                                       | Notas                               |
+| ------------------ | ----------- | --------------------------------------------- | ----------------------------------- |
+| `PORT`             |             | `8080`                                        | Puerto interno                      |
+| `NODE_ENV`         |             | `production`                                  |                                     |
+| `MONGODB_URI`      | ✅          | `mongodb://mongo:27017/banexcoin`             | URI de MongoDB (con auth en prod)   |
+| `AI_SERVICE_URL`   | ✅          | `http://ai:8080`                              | URL interna al servicio AI          |
+| `JWT_SECRET`       | ✅          | —                                             | String aleatorio fuerte (32+ bytes) |
+| `JWT_ISSUER`       |             | `banexcoin`                                   |                                     |
+| `JWT_AUDIENCE`     |             | `banexcoin-internal`                          |                                     |
 
-### 2.3 Runtime — `public-api` (Hono + Bun)
+### 2.3 Runtime — `public-api` (Hono + Bun + Prisma)
 
-| Variable           | Obligatoria | Default                                  | Notas                            |
-| ------------------ | ----------- | ---------------------------------------- | -------------------------------- |
-| `PORT`             |             | `8080`                                   |                                  |
-| `NODE_ENV`         |             | `production`                             |                                  |
-| `DATABASE_URL`     | ✅          | `postgres://…@public-database:5432/...`  |                                  |
-| `PRIVATE_API_URL`  | ✅          | `http://private-api:8080`                | URL interna al private-api       |
-| `JWT_SECRET`       | ✅          | —                                        | Mismo secret que el private-api  |
+| Variable           | Obligatoria | Default                           | Notas                            |
+| ------------------ | ----------- | --------------------------------- | -------------------------------- |
+| `PORT`             |             | `8080`                            |                                  |
+| `NODE_ENV`         |             | `production`                      |                                  |
+| `MONGODB_URI`      | ✅          | `mongodb://mongo:27017/banexcoin` | Misma instancia que private-api  |
+| `PRIVATE_API_URL`  | ✅          | `http://private-api:8080`         | URL interna al private-api       |
+| `JWT_SECRET`       | ✅          | —                                 | Mismo secret que el private-api  |
 
 ### 2.4 Runtime — `ai` (FastAPI)
 
@@ -123,7 +122,8 @@ En **Dokploy → cada servicio → Environment** define los runtime vars de §2.
 
 - `JWT_SECRET` — generar con `openssl rand -base64 48`. **Mismo** valor en `private-api` y
   `public-api`.
-- `DATABASE_URL` — apunta al servicio Postgres correspondiente dentro de la red de Dokploy.
+- `MONGODB_URI` — `mongodb://user:pass@mongo:27017/banexcoin?authSource=admin`. Mismo URI en
+  ambas APIs (private escribe vía Mongoose, public lee vía Prisma).
 - `AI_SERVICE_URL`, `PRIVATE_API_URL` — URLs internas (service discovery de Dokploy).
 
 ## 4. Checklist antes del primer push a `main`
@@ -131,6 +131,7 @@ En **Dokploy → cada servicio → Environment** define los runtime vars de §2.
 - [ ] `pnpm prod:up` levanta los 4 servicios sin errores y `prod:health` muestra todos `healthy`
 - [ ] Smoke test de `/health` del AI y root de las APIs responde 200
 - [ ] `.env.prod` está en `.gitignore` (ya lo está vía pattern `.env*`)
+- [ ] `MONGO_USER` / `MONGO_PASSWORD` definidos en `.env.prod`
 - [ ] GitHub Actions secrets §3.1 cargados
 - [ ] Repos `banexcoin-web-client`, `banexcoin-private-api`, `banexcoin-public-api`,
       `banexcoin-ai-api` creados en Docker Hub (o el namespace que uses)
@@ -139,10 +140,11 @@ En **Dokploy → cada servicio → Environment** define los runtime vars de §2.
 
 ## 5. Troubleshooting rápido
 
-| Síntoma                                          | Causa probable                                       |
-| ------------------------------------------------ | ---------------------------------------------------- |
-| `PRIVATE_DB_PASSWORD required` al `prod:up`      | Falta `.env.prod` o variable sin valor               |
+| Síntoma                                          | Causa probable                                            |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| `MONGO_USER required` al `prod:up`               | Falta `.env.prod` o variable sin valor                    |
 | Frontend no llega al API en browser              | `NEXT_PUBLIC_API_URL` apunta al host equivocado (build-time, requiere rebuild) |
-| `private-api` reinicia en loop                   | `JWT_SECRET` vacío o DB unreachable — `pnpm prod:logs` |
+| `private-api` reinicia en loop                   | `JWT_SECRET` vacío o MongoDB unreachable — `pnpm prod:logs` |
+| `public-api` arranca pero falla en queries       | `prisma generate` no se ejecutó — reconstruir imagen      |
 | `ai` healthcheck falla                           | El binding del puerto 8080 (interno) no está activo — revisa `uvicorn` logs |
-| Postgres no levanta tras `prod:nuke`             | Volúmenes recreados; primera corrida re-inicializa esquema |
+| MongoDB no levanta tras `prod:nuke`              | Normal — primera corrida crea la DB vacía automáticamente |
