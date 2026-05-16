@@ -3,6 +3,7 @@ FROM oven/bun:1-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json bun.lock* bun.lockb* ./
+COPY prisma ./prisma
 RUN bun install --frozen-lockfile || bun install
 
 FROM base AS builder

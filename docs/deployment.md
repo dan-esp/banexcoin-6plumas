@@ -128,7 +128,7 @@ En **Dokploy → cada servicio → Environment** define los runtime vars de §2.
 
 ## 4. Checklist antes del primer push a `main`
 
-- [ ] `pnpm prod:up` levanta los 4 servicios sin errores y `prod:health` muestra todos `healthy`
+- [ ] `pnpm prod:up` levanta los 5 servicios sin errores y `prod:health` muestra todos `healthy`
 - [ ] Smoke test de `/health` del AI y root de las APIs responde 200
 - [ ] `.env.prod` está en `.gitignore` (ya lo está vía pattern `.env*`)
 - [ ] `MONGO_USER` / `MONGO_PASSWORD` definidos en `.env.prod`
