@@ -14,6 +14,23 @@ pnpm-orchestrated polyglot monorepo. Apps live under `apps/`:
 The root `package.json` only orchestrates pnpm workspaces (`frontend`, `private`). Hono uses Bun
 directly; the AI service uses `uv` — neither is a pnpm workspace.
 
+## Project Skills
+
+Claude project skill mirrors live under `.claude/skills/` and point to canonical shared skills in
+`skills/`:
+
+- `banex-changelog` — maintain `CHANGELOG.md` and release summaries from git + semantic-release.
+- `banex-todo` — maintain `TODO.md` as the shared execution board.
+- `banex-sync` — sync `constitution/`, `specs/`, `docs/`, `README.md`, `AGENTS.md`, and this file.
+- `banex-private-api` — build or review the NestJS ETL, validation, cashback, approval, and export workflow.
+- `banex-frontend-console` — build or review the Next.js operations console.
+- `banex-ai-anomaly` — work on FastAPI anomaly detection and review-support integration.
+- `banex-demo` — prepare the hackathon demo story and readiness checklist.
+- `banex-data-workbook` — inspect source workbooks, Pago QR mappings, and dataset facts.
+- `banex-product-rules` — maintain business rules, finance assumptions, tier defaults, and open questions.
+
+Edit canonical skill files in `skills/<skill-name>/SKILL.md` first, then keep mirrors aligned.
+
 ## Common Commands
 
 From repo root.

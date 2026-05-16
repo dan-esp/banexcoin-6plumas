@@ -1,43 +1,46 @@
-# Documentación — BanexReintegra
+# Documentación de Referencia — BanexReintegra
 
-Índice de la documentación del proyecto. Orden de lectura recomendado:
+Esta carpeta ya no es la fuente principal de verdad del producto. Su función es conservar
+investigación, contexto y notas largas que respaldan las decisiones actuales.
 
-| #   | Archivo                                                  | Propósito                                                                            |
-| --- | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 1   | [`tech-notes.md`](./tech-notes.md)                       | **Problema y alcance.** Qué resuelve BanexReintegra, requisitos y restricciones.     |
-| 2   | [`deep-investigation.md`](./deep-investigation.md)       | **Contexto regulatorio.** Marco legal boliviano (BCB, UIF, ASFI), KYC/AML, vacíos.   |
-| 3   | [`teoric-references.md`](./teoric-references.md)         | **Modelo financiero.** Cashback, FX dinámico, niveles, idempotencia.                 |
-| 4   | [`architecture-sketch.md`](./architecture-sketch.md)     | **Arquitectura.** Módulos, pipeline, reglas de negocio, dataset, mapeo a servicios.  |
-| 5   | [`tech-stack.md`](./tech-stack.md)                       | **Tech stack.** Lenguajes, frameworks, Docker, CI/CD, herramientas por servicio.     |
-| 6   | [`deployment.md`](./deployment.md)                       | **Deploy & secrets.** Compose de producción local + variables para GitHub Actions / Dokploy. |
+Capas de documentación del repo:
 
-> Léelos en este orden si vienes desde cero. Si vienes a programar, salta directo a
-> `architecture-sketch.md`, `tech-stack.md` y `apps/api/ai/README.md`.
+- [`../constitution/`](../constitution/) — verdad actual del producto: misión, roadmap, tech stack y principios.
+- [`../specs/feature/`](../specs/feature/) — verdad actual de implementación: features, reglas y plan operativo.
+- [`./`](./) — material de referencia: investigación, arquitectura extendida, contexto regulatorio y notas técnicas.
 
-## Mapa rápido proyecto ↔ documentación
+## Qué leer según la necesidad
 
-| Pregunta                                                   | Dónde está la respuesta                                                                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| ¿Qué hace este sistema?                                    | [`tech-notes.md §2-3`](./tech-notes.md#2-descripción-del-problema)                                        |
-| ¿Por qué legalmente puede existir?                         | [`deep-investigation.md §3-4`](./deep-investigation.md#3-marco-normativo-vigente-las-5-normas-que-rigen-a-banexcoin) |
-| ¿Cómo se calcula el cashback?                              | [`teoric-references.md §3`](./teoric-references.md#3-los-tres-pilares-del-modelo-financiero)              |
-| ¿Cuáles son los niveles y porcentajes?                     | [`teoric-references.md §3 Pilar 2`](./teoric-references.md#pilar-2--clasificación-por-niveles-de-consumo) (con nota de discrepancia) |
-| ¿Cómo se filtra el Excel?                                  | [`architecture-sketch.md §3`](./architecture-sketch.md#3-reglas-de-negocio)                                |
-| ¿Qué microservicio hace qué?                               | [`tech-notes.md §6`](./tech-notes.md#6-mapeo-a-microservicios-del-repo)                                   |
-| ¿Qué versiones / runtimes uso?                             | [`tech-stack.md`](./tech-stack.md)                                                                        |
-| ¿Cómo detectamos anomalías?                                | [`architecture-sketch.md §7`](./architecture-sketch.md#7-integración-con-el-servicio-ai) + [`apps/api/ai/README.md`](../apps/api/ai/README.md) |
-| ¿Qué obligaciones KYC/AML cumplir antes de emitir cashback? | [`deep-investigation.md §5`](./deep-investigation.md#5-obligaciones-kyc-extraídas-de-los-términos-y-condiciones-oficiales) + [`teoric-references.md §4`](./teoric-references.md#4-marco-normativo-aplicado-al-producto) |
+Si quieres entender el producto actual:
 
-## Hechos clave de un vistazo
+1. [`../constitution/mission.md`](../constitution/mission.md)
+2. [`../constitution/roadmap.md`](../constitution/roadmap.md)
+3. [`../constitution/tech-stack.md`](../constitution/tech-stack.md)
+4. [`../specs/feature/requirements.md`](../specs/feature/requirements.md)
+5. [`../specs/feature/validation.md`](../specs/feature/validation.md)
 
-- **5,325** transacciones QR válidas sobre **239** usuarios únicos en **May–Ago 2025**.
-- **1** duplicado, **12** montos > 5,000 Bs candidatos a flag AML.
-- FX USDT/Bs actual ≈ **6.96** (dinámico).
-- Umbral AML referencial: operaciones individuales o acumuladas **> Bs 50,000**.
-- Plazo regulatorio clave: adecuación ASFI **al 31/12/2025**.
+Si quieres contexto profundo o respaldo:
 
-## Otros recursos
+1. [`tech-notes.md`](./tech-notes.md)
+2. [`deep-investigation.md`](./deep-investigation.md)
+3. [`teoric-references.md`](./teoric-references.md)
+4. [`architecture-sketch.md`](./architecture-sketch.md)
+5. [`tech-stack.md`](./tech-stack.md)
 
-- `dataset.xlsx` — Dataset original (no se versiona código sobre él, sólo es referencia).
-- [`../CLAUDE.md`](../CLAUDE.md) — Guía para Claude Code (arquitectura del repo, comandos).
-- [`../README.md`](../README.md) — README de proyecto.
+## Qué contiene esta carpeta
+
+| Archivo | Rol |
+| --- | --- |
+| [`tech-notes.md`](./tech-notes.md) | Problema, alcance y mapeo general del sistema. |
+| [`deep-investigation.md`](./deep-investigation.md) | Contexto regulatorio y riesgos KYC/AML. |
+| [`teoric-references.md`](./teoric-references.md) | Modelo financiero y racional de cashback. |
+| [`architecture-sketch.md`](./architecture-sketch.md) | Boceto detallado de arquitectura y pipeline. |
+| [`tech-stack.md`](./tech-stack.md) | Inventario técnico detallado del repo actual. |
+| [`deployment.md`](./deployment.md) | Deploy local/operacional y variables de entorno de referencia. |
+| `dataset.xlsx` | Dataset de referencia para análisis manual. |
+
+## Regla de mantenimiento
+
+- Si un documento define la decisión vigente del producto, debe vivir en `constitution/` o `specs/`.
+- Si un documento explica contexto, investigación o detalle histórico, debe vivir en `docs/`.
+- Los archivos fuente del challenge viven en [`../resources/`](../resources/), no en `files/`.

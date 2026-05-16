@@ -2,118 +2,147 @@
 
 ## Overview
 
-The stack should optimize for hackathon delivery, clear business logic, and financial traceability.
+The current repository is a polyglot monorepo built for a hackathon-ready operations platform.
 
-The recommended shape is:
+Its shape is:
 
 - One web frontend
-- One backend
-- One relational database
+- Three backend services
+- Two PostgreSQL databases
+- One Redis instance
 
-This project should use a modular monolith, not microservices. The workflow is tightly connected: import, validation, calculation, approval, and export all belong to the same financial process.
+This is no longer a single-backend plan. The repo already separates concerns between internal business logic, public-facing access, and AI anomaly detection.
 
 ## Frontend
 
-Recommended frontend:
+Frontend app:
 
-- Next.js
+- `apps/frontend`
+- Next.js 16
+- React 19
 - TypeScript
-- Tailwind CSS
-- TanStack Query
-- Recharts
+- Tailwind CSS 4
+- Biome
 
-Why:
+Role:
 
-- Next.js gives fast setup, solid routing, and a good developer experience for an internal dashboard.
-- TypeScript helps keep UI state and API contracts explicit.
-- Tailwind is fast for hackathon delivery.
-- TanStack Query is enough for batch lists, dashboards, validation results, and calculation views.
-- Recharts is sufficient for KPI and tier-distribution charts.
+- Internal operations console
+- Report upload flow
+- Validation and batch review screens
+- Cashback results and KPI dashboard
+- Approval and export flow
+- AI anomaly visibility
 
-Frontend responsibility:
+## Backend Services
 
-- Upload report
-- Show validation results
-- Display batch states
-- Review calculation outputs
-- Support approval and export flows
-- Show dashboard KPIs
+### 1. Private API
 
-## Backend
+Service:
 
-Recommended backend:
+- `apps/api/private`
+- NestJS 11
+- TypeScript
+- Express platform
+- pnpm
 
-- One backend only
-- ASP.NET Core Web API
-- C#
-- Entity Framework Core
+Role:
 
-Why one backend:
+- Internal business API
+- ETL and ingestion
+- Validation rules
+- Cashback calculation
+- Batch lifecycle and approvals
+- BanexTransfer export
 
-- Simpler deployment
-- Less coordination overhead
-- Better consistency for financial state
-- Faster to build in a hackathon
-- Easier to audit a single controlled workflow
+This is the core financial workflow service.
 
-Recommended internal modules:
+### 2. Public API
 
-- ETL
-- Rate Oracle
-- Cashback Engine
-- Export Engine
-- Analytics
-- Approval and Audit
+Service:
 
-If background processing is needed later, add jobs inside the same backend first. Do not split into a second backend unless scale or operational complexity proves it necessary.
+- `apps/api/public`
+- Hono
+- TypeScript
+- Bun
 
-## Database
+Role:
 
-Recommended database:
+- Thin public-facing or gateway API
+- Read-oriented or proxy-facing access
+- Separation from the internal financial API
 
-- PostgreSQL
+### 3. AI API
 
-Why:
+Service:
 
-- Reliable relational model
-- Good fit for batches, transactions, tiers, approvals, and audit logs
-- Easy local and cloud setup
+- `apps/api/ai`
+- FastAPI
+- Python 3.12
+- uv
+- scikit-learn
+- pandas / numpy / openpyxl
 
-Suggested environments:
+Role:
 
-- Local development: Docker PostgreSQL
-- Cloud option: Neon, Supabase, or Railway Postgres
+- Isolation Forest anomaly detection
+- Model training and prediction over QR transaction patterns
+- Support layer for review and insights
 
-## File Processing
+AI remains outside the deterministic money-calculation path.
 
-Recommended libraries for the backend:
+## How Many Backends?
 
-- ClosedXML or EPPlus for Excel
-- CsvHelper for CSV import/export
+The answer in the current repo is:
 
-These are central because the product depends on uploaded operational files and export-ready payout outputs.
+```txt
+Three backend services.
+```
 
-## AI
+They are:
 
-AI is optional and should stay outside the money-calculation path.
+- Private API for core business logic
+- Public API for external-facing access
+- AI API for anomaly detection
 
-If included:
+## Data and Infrastructure
 
-- Use it only for summaries, anomaly explanations, and executive text
-- Keep all financial calculations deterministic in backend code
+Infrastructure currently defined in `docker-compose.yml`:
 
-## Final Direction
+- `private-database`: PostgreSQL 17
+- `public-database`: PostgreSQL 17
+- `redis`: Redis 8.2
+- `ai`: containerized FastAPI service
 
-The default technical direction is:
+This means the current platform uses:
+
+```txt
+2 Postgres databases + 1 Redis + 1 AI service
+```
+
+## Tooling
+
+The repo uses multiple runtimes and package managers by service:
+
+- `pnpm` for the root workspace, frontend, and private API
+- `bun` for the public API
+- `uv` for the AI service
+
+Quality tooling:
+
+- Frontend: Biome
+- Private API: ESLint + Prettier
+- AI API: Ruff
+
+## Current Technical Direction
+
+The repo is currently aligned to this architecture:
 
 ```txt
 Next.js frontend
--> ASP.NET Core modular monolith backend
--> PostgreSQL database
+-> Hono public API
+-> NestJS private API
+-> FastAPI AI service
+-> PostgreSQL + Redis
 ```
 
-For this project, the answer to "how many backends?" is:
-
-```txt
-One backend.
-```
+This should be treated as the active stack unless the team explicitly decides to simplify or consolidate services later.
