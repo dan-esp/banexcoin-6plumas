@@ -246,19 +246,6 @@ export class ValidationReportDto {
   })
   groupedIssues!: IssueGroupDto[];
 
-  @ApiProperty({
-    type: [RowIssueDto],
-    description:
-      'Detalle individual por fila (máximo 100 entradas). Para el resumen ejecutivo usar groupedIssues.',
-  })
-  rowIssues!: RowIssueDto[];
-
   @ApiProperty({ example: 176, description: 'Total de problemas encontrados en todas las filas.' })
   totalIssueCount!: number;
-
-  @ApiProperty({
-    example: true,
-    description: 'true si hay más de 100 problemas. Solo se devuelven los primeros 100 en rowIssues.',
-  })
-  issuesTruncated!: boolean;
 }

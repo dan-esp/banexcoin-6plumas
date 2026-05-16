@@ -39,9 +39,6 @@ const REQUIRED_HEADERS: Record<EntityType, string[]> = {
 /** Row number offset: data starts at row 2 in Excel (row 1 = header). */
 const DATA_ROW_OFFSET = 2;
 
-/** Maximum individual row issues returned in rowIssues to avoid huge payloads. */
-const MAX_INDIVIDUAL_ISSUES = 100;
-
 /** Maximum affected rows listed per issue group. */
 const MAX_ROWS_PER_GROUP = 20;
 
@@ -120,9 +117,6 @@ export class FileValidatorService {
     // ── 7. Problemas agrupados por tipo ─────────────────────────────────────
     const groupedIssues = this.buildGroupedIssues(allIssues);
 
-    const totalIssueCount = allIssues.length;
-    const issuesTruncated = totalIssueCount > MAX_INDIVIDUAL_ISSUES;
-
     return {
       fileName,
       fileFormat,
@@ -132,9 +126,7 @@ export class FileValidatorService {
       headerValidation,
       filterBreakdown,
       groupedIssues,
-      rowIssues: allIssues.slice(0, MAX_INDIVIDUAL_ISSUES),
-      totalIssueCount,
-      issuesTruncated,
+      totalIssueCount: allIssues.length,
     };
   }
 
@@ -677,9 +669,7 @@ export class FileValidatorService {
           moreRowsExist: false,
         },
       ],
-      rowIssues: missingIssues,
       totalIssueCount: count,
-      issuesTruncated: false,
     };
   }
 }

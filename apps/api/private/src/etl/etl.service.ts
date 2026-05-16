@@ -8,11 +8,11 @@ import { ValidationReportDto } from './dto/validation-report.dto.js';
 import { FileValidatorService } from './validators/file-validator.service.js';
 
 /**
- * Orchestrates the Extract → Transform → Load pipeline.
+ * Orquesta el pipeline Extract → Transform → Load y la validación en seco.
  *
- * EtlService depends only on interfaces and factories — never on concrete
- * strategies or mappers. Adding a new file format or entity type
- * does not require changes here.
+ * Depende únicamente de interfaces y factories — nunca de estrategias o mappers
+ * concretos, por lo que agregar un nuevo formato o tipo de entidad no requiere
+ * cambios aquí.
  */
 @Injectable()
 export class EtlService {
@@ -24,10 +24,10 @@ export class EtlService {
   ) {}
 
   /**
-   * Processes an uploaded file end-to-end:
-   *  1. Extract — reads buffer via the correct file strategy (CSV or XLSX)
-   *  2. Transform — maps raw rows to typed domain objects via the entity mapper
-   *  3. Load — replaces the in-memory store entry for the entity type
+   * Procesa un archivo subido de extremo a extremo:
+   *  1. Extract — lee el buffer con la estrategia correcta (CSV o XLSX)
+   *  2. Transform — convierte las filas crudas en objetos tipados mediante el mapper de entidad
+   *  3. Load — reemplaza la entrada del store en memoria para el tipo de entidad
    */
   async processUpload(
     file: Express.Multer.File,
@@ -50,9 +50,9 @@ export class EtlService {
   }
 
   /**
-   * Validates an uploaded file without writing anything to the store.
-   * Runs a full dry-run: header check, per-field parsing, business rules,
-   * duplicate detection, and filter simulation.
+   * Valida un archivo sin escribir nada en el store (dry-run completo).
+   * Verifica encabezados, parseo de campos, reglas de negocio, duplicados,
+   * simulación de filtros y flag de revisión manual.
    */
   async validateFile(
     file: Express.Multer.File,
@@ -69,20 +69,5 @@ export class EtlService {
       fileFormat,
       manualReviewThreshold,
     );
-  }
-
-  /** Returns the first `limit` stored rows for the given entity type. */
-  preview(entityType: EntityType, limit = 10): unknown[] {
-    return this.etlStore.get(entityType).slice(0, limit);
-  }
-
-  /** Returns row counts per entity type for all loaded entity types. */
-  status(): Record<string, number> {
-    return this.etlStore.status();
-  }
-
-  /** Clears the in-memory store for the given entity type. */
-  clear(entityType: EntityType): void {
-    this.etlStore.clear(entityType);
   }
 }
