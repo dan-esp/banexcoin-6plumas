@@ -19,7 +19,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-FROM python:3.12-slim-bookworm AS runner
+FROM python:3.14-slim-bookworm AS runner
 WORKDIR /app
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
