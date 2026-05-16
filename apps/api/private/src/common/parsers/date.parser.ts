@@ -17,13 +17,22 @@ export function parseBanexDate(raw: string): Date {
 
 /**
  * Parses the simple date format without timezone.
- * Input:  "15/04/2025 09:02:17"
- * Output: Date("2025-04-15T09:02:17")
+ * Accepts two variants:
+ *   "15/04/2025 09:02:17"     → DD/MM/YYYY HH:mm:ss  (slash-separated, day-first)
+ *   "2025-05-05 02:31:18"     → YYYY-MM-DD HH:mm:ss  (dash-separated, ISO-like)
+ * Output: Date object (local time, no timezone offset applied)
  * Used by: QrPaymentRow.updatedAt
  */
 export function parseSimpleDate(raw: string): Date {
   const trimmed = raw.trim();
-  const [datePart, timePart] = trimmed.split(' ');
-  const [dd, mm, yyyy] = datePart.split('/');
-  return new Date(`${yyyy}-${mm}-${dd}T${timePart ?? '00:00:00'}`);
+  const [datePart, timePart = '00:00:00'] = trimmed.split(' ');
+
+  if (datePart.includes('/')) {
+    // DD/MM/YYYY
+    const [dd, mm, yyyy] = datePart.split('/');
+    return new Date(`${yyyy}-${mm}-${dd}T${timePart}`);
+  }
+
+  // YYYY-MM-DD  (already ISO order — pass straight through)
+  return new Date(`${datePart}T${timePart}`);
 }

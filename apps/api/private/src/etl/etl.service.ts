@@ -4,6 +4,8 @@ import { ParserFactory } from './factories/parser.factory.js';
 import { MapperFactory } from './factories/mapper.factory.js';
 import { EtlStore } from './store/etl-store.service.js';
 import { UploadResponseDto } from './dto/upload-response.dto.js';
+import { ValidationReportDto } from './dto/validation-report.dto.js';
+import { FileValidatorService } from './validators/file-validator.service.js';
 
 /**
  * Orchestrates the Extract → Transform → Load pipeline.
@@ -18,6 +20,7 @@ export class EtlService {
     private readonly parserFactory: ParserFactory,
     private readonly mapperFactory: MapperFactory,
     private readonly etlStore: EtlStore,
+    private readonly fileValidator: FileValidatorService,
   ) {}
 
   /**
@@ -44,6 +47,28 @@ export class EtlService {
       skipped: rawRows.length - results.length,
       errors,
     };
+  }
+
+  /**
+   * Validates an uploaded file without writing anything to the store.
+   * Runs a full dry-run: header check, per-field parsing, business rules,
+   * duplicate detection, and filter simulation.
+   */
+  async validateFile(
+    file: Express.Multer.File,
+    entityType: EntityType,
+    manualReviewThreshold = 5000,
+  ): Promise<ValidationReportDto> {
+    const fileFormat = file.originalname.toLowerCase().endsWith('.csv') ? 'csv' : 'xlsx';
+    const strategy = this.parserFactory.resolve(file.mimetype, file.originalname);
+    const rawRows = await strategy.extractRows(file.buffer);
+    return this.fileValidator.validate(
+      rawRows,
+      entityType,
+      file.originalname,
+      fileFormat,
+      manualReviewThreshold,
+    );
   }
 
   /** Returns the first `limit` stored rows for the given entity type. */

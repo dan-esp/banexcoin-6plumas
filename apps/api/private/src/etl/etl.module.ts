@@ -7,6 +7,7 @@ import { CsvStrategy } from './strategies/csv.strategy.js';
 import { XlsxStrategy } from './strategies/xlsx.strategy.js';
 import { QrPaymentsMapper } from './mappers/qr-payments.mapper.js';
 import { EtlStore } from './store/etl-store.service.js';
+import { FileValidatorService } from './validators/file-validator.service.js';
 
 @Module({
   controllers: [EtlController],
@@ -18,6 +19,7 @@ import { EtlStore } from './store/etl-store.service.js';
     CsvStrategy,
     XlsxStrategy,
     QrPaymentsMapper,
+    FileValidatorService,
   ],
   exports: [EtlStore],
 })
