@@ -68,7 +68,7 @@ jobs:
 
       - name: Build Check & Warm Cache (prod)
         if: steps.check_skip.outputs.should_run == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.file }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: Build Check & Warm Cache (test)
         if: steps.check_skip.outputs.should_run == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.file }}

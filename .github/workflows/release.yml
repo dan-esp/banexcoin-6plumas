@@ -109,7 +109,7 @@ jobs:
       # ── PROD ───────────────────────────────────────────────────────────
       - name: Build and Push Image (prod)
         if: steps.check_skip.outputs.should_run == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.file }}
@@ -144,7 +144,7 @@ jobs:
       # ── TEST ───────────────────────────────────────────────────────────
       - name: Build and Push Image (test)
         if: steps.check_skip.outputs.should_run == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.file }}
