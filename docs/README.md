@@ -8,9 +8,10 @@
 | 2   | [`deep-investigation.md`](./deep-investigation.md)       | **Contexto regulatorio.** Marco legal boliviano (BCB, UIF, ASFI), KYC/AML, vacíos.   |
 | 3   | [`teoric-references.md`](./teoric-references.md)         | **Modelo financiero.** Cashback, FX dinámico, niveles, idempotencia.                 |
 | 4   | [`architecture-sketch.md`](./architecture-sketch.md)     | **Arquitectura.** Módulos, pipeline, reglas de negocio, dataset, mapeo a servicios.  |
+| 5   | [`tech-stack.md`](./tech-stack.md)                       | **Tech stack.** Lenguajes, frameworks, Docker, CI/CD, herramientas por servicio.     |
 
 > Léelos en este orden si vienes desde cero. Si vienes a programar, salta directo a
-> `architecture-sketch.md` y a `apps/api/ai/README.md`.
+> `architecture-sketch.md`, `tech-stack.md` y `apps/api/ai/README.md`.
 
 ## Mapa rápido proyecto ↔ documentación
 
@@ -22,6 +23,7 @@
 | ¿Cuáles son los niveles y porcentajes?                     | [`teoric-references.md §3 Pilar 2`](./teoric-references.md#pilar-2--clasificación-por-niveles-de-consumo) (con nota de discrepancia) |
 | ¿Cómo se filtra el Excel?                                  | [`architecture-sketch.md §3`](./architecture-sketch.md#3-reglas-de-negocio)                                |
 | ¿Qué microservicio hace qué?                               | [`tech-notes.md §6`](./tech-notes.md#6-mapeo-a-microservicios-del-repo)                                   |
+| ¿Qué versiones / runtimes uso?                             | [`tech-stack.md`](./tech-stack.md)                                                                        |
 | ¿Cómo detectamos anomalías?                                | [`architecture-sketch.md §7`](./architecture-sketch.md#7-integración-con-el-servicio-ai) + [`apps/api/ai/README.md`](../apps/api/ai/README.md) |
 | ¿Qué obligaciones KYC/AML cumplir antes de emitir cashback? | [`deep-investigation.md §5`](./deep-investigation.md#5-obligaciones-kyc-extraídas-de-los-términos-y-condiciones-oficiales) + [`teoric-references.md §4`](./teoric-references.md#4-marco-normativo-aplicado-al-producto) |
 
