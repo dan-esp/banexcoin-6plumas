@@ -19,7 +19,7 @@
                                               │  (uv + sk)   │
                                               └──────────────┘
 
-Postgres x2 · Redis · Docker Hub · Dokploy · GitHub Actions
+Postgres x2 · Docker Hub · Dokploy · GitHub Actions
 ```
 
 ## 2. Servicios
@@ -102,7 +102,6 @@ Postgres x2 · Redis · Docker Hub · Dokploy · GitHub Actions
 
 | Servicio              | Imagen           | Puerto host  | Propósito                                |
 | --------------------- | ---------------- | ------------ | ---------------------------------------- |
-| `redis`               | `redis:8.2`      | 6379         | Cache / sesiones                         |
 | `private-database`    | `postgres:17`    | 5440         | DB del servicio privado (ETL + cashback) |
 | `public-database`     | `postgres:17`    | 5441         | DB del servicio público                  |
 | `ai`                  | build local      | 8081 → 8080  | Servicio AI (volumen `.containers/ai-data:/app/data`) |
@@ -121,7 +120,7 @@ Override de dev (`docker-compose.override.yml`) inyecta credenciales por defecto
 | Build & push           | `docker/setup-buildx-action@v3` + `docker/build-push-action@v6` (linux/amd64, cache Docker Hub) |
 | Releases               | **semantic-release** (`cycjimmy/semantic-release-action@v6`) + `conventionalcommits` |
 | Registry               | Docker Hub (`${DOCKERHUB_USERNAME}/banexcoin-<service>`)        |
-| Deploy                 | **Dokploy** (webhooks por servicio, prod + test)                |
+| Deploy                 | **Dokploy** (webhooks por servicio)                             |
 | Dependencias auto      | **Dependabot** (npm / pip / docker / github-actions)            |
 
 ### Pipelines
@@ -131,7 +130,7 @@ Override de dev (`docker-compose.override.yml`) inyecta credenciales por defecto
 | `check_branch.yml`        | PR a `main`      | Valida nombre de rama (conventional prefixes)                       |
 | `check_pull_request.yml`  | PR a `main`      | Valida título de PR + mensajes de commit (conventional commits)     |
 | `check_push.yml`          | PR a `main`      | Matriz: build de cada Dockerfile cambiado, warm cache               |
-| `release.yml`             | push a `main`    | semantic-release → build & push `:stable`/`:test`/`:<ver>` → Dokploy |
+| `release.yml`             | push a `main`    | semantic-release → build & push `:stable`/`:<ver>` → Dokploy        |
 
 ## 5. Tooling & developer experience
 

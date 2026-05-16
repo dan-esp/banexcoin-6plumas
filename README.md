@@ -21,7 +21,7 @@ See [CLAUDE.md](./CLAUDE.md) for architecture and dev commands.
 pnpm install                # installs frontend + private (pnpm workspaces)
 cd apps/api/public && bun install && cd -
 cd apps/api/ai && uv sync && cd -
-pnpm compose                # postgres x2 + redis + ai container
+pnpm compose                # postgres x2 + ai container
 ```
 
 ## CI/CD

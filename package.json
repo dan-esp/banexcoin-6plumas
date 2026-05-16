@@ -13,7 +13,13 @@
     "dev:ai": "uv --directory apps/api/ai run uvicorn src.main:app --reload --port 8081",
     "build": "pnpm --parallel build",
     "lint": "pnpm --parallel lint",
-    "format": "pnpm --parallel format"
+    "format": "pnpm --parallel format",
+    "prod:up": "docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build",
+    "prod:down": "docker compose -f docker-compose.prod.yml --env-file .env.prod down",
+    "prod:nuke": "docker compose -f docker-compose.prod.yml --env-file .env.prod down -v",
+    "prod:logs": "docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail=200",
+    "prod:ps": "docker compose -f docker-compose.prod.yml --env-file .env.prod ps",
+    "prod:health": "docker compose -f docker-compose.prod.yml --env-file .env.prod ps --format 'table {{.Name}}\t{{.Status}}\t{{.Ports}}'"
   },
   "packageManager": "pnpm@10.33.2"
 }

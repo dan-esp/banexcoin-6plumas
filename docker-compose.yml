@@ -1,12 +1,4 @@
 services:
-  redis:
-    image: redis:8.2
-    container_name: banexcoin.redis
-    ports:
-      - '6379:6379'
-    networks:
-      - banexcoin-network
-
   private-database:
     image: postgres:17
     container_name: banexcoin.private-database

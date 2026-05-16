@@ -19,7 +19,7 @@ directly; the AI service uses `uv` — neither is a pnpm workspace.
 From repo root.
 
 ```sh
-# Infra (postgres x2, redis, ai)
+# Infra (postgres x2, ai)
 pnpm compose
 pnpm compose:build
 pnpm down

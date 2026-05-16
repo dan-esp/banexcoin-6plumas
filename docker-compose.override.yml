@@ -1,10 +1,4 @@
 services:
-  redis:
-    ports:
-      - '6379'
-    volumes:
-      - ./.containers/redis-data:/data
-
   private-database:
     environment:
       - POSTGRES_DB=private-db

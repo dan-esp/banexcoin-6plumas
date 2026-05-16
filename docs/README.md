@@ -9,6 +9,7 @@
 | 3   | [`teoric-references.md`](./teoric-references.md)         | **Modelo financiero.** Cashback, FX dinámico, niveles, idempotencia.                 |
 | 4   | [`architecture-sketch.md`](./architecture-sketch.md)     | **Arquitectura.** Módulos, pipeline, reglas de negocio, dataset, mapeo a servicios.  |
 | 5   | [`tech-stack.md`](./tech-stack.md)                       | **Tech stack.** Lenguajes, frameworks, Docker, CI/CD, herramientas por servicio.     |
+| 6   | [`deployment.md`](./deployment.md)                       | **Deploy & secrets.** Compose de producción local + variables para GitHub Actions / Dokploy. |
 
 > Léelos en este orden si vienes desde cero. Si vienes a programar, salta directo a
 > `architecture-sketch.md`, `tech-stack.md` y `apps/api/ai/README.md`.
