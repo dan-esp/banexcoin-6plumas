@@ -1,0 +1,73 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/apps/frontend/'
+    schedule:
+      interval: 'daily'
+    target-branch: 'main'
+    open-pull-requests-limit: 10
+    groups:
+      react-packages:
+        patterns:
+          - 'react*'
+      radix-ui:
+        patterns:
+          - '@radix-ui/*'
+      dev-dependencies:
+        dependency-type: 'development'
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/apps/api/private/'
+    schedule:
+      interval: 'daily'
+    target-branch: 'main'
+    open-pull-requests-limit: 10
+    groups:
+      nestjs-packages:
+        patterns:
+          - '@nestjs/*'
+      dev-dependencies:
+        dependency-type: 'development'
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/apps/api/public/'
+    schedule:
+      interval: 'daily'
+    target-branch: 'main'
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: 'pip'
+    directory: '/apps/api/ai/'
+    schedule:
+      interval: 'daily'
+    target-branch: 'main'
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/frontend/'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/api/private/'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/api/public/'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/api/ai/'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'

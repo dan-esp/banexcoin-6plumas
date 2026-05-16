@@ -1,0 +1,177 @@
+name: CI/CD_PUSH_MAIN_RELEASE
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      new_tag: ${{ steps.semantic.outputs.new_release_version || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v6
+        id: semantic
+        with:
+          extra_plugins: |
+            conventional-changelog-conventionalcommits
+            @semantic-release/commit-analyzer
+            @semantic-release/release-notes-generator
+            @semantic-release/github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      private: ${{ steps.filter.outputs.private }}
+      public: ${{ steps.filter.outputs.public }}
+      ai: ${{ steps.filter.outputs.ai }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Filter Changed Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: '.github/filters.yml'
+
+  build-and-push:
+    needs: [release, changes]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - id: 'web'
+            name: 'web-client'
+            context: './apps/frontend'
+            file: './apps/frontend/Dockerfile'
+            webhooks_prod: []
+            webhooks_test: []
+          - id: 'private'
+            name: 'private-api'
+            context: './apps/api/private'
+            file: './apps/api/private/Dockerfile'
+            webhooks_prod: []
+            webhooks_test: []
+          - id: 'public'
+            name: 'public-api'
+            context: './apps/api/public'
+            file: './apps/api/public/Dockerfile'
+            webhooks_prod: []
+            webhooks_test: []
+          - id: 'ai'
+            name: 'ai-api'
+            context: './apps/api/ai'
+            file: './apps/api/ai/Dockerfile'
+            webhooks_prod: []
+            webhooks_test: []
+
+    steps:
+      - name: Check if service should run
+        id: check_skip
+        run: |
+          SHOULD_RUN="${{ needs.changes.outputs[matrix.service.id] }}"
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ── PROD ───────────────────────────────────────────────────────────
+      - name: Build and Push Image (prod)
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.file }}
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:stable
+            ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:${{ needs.release.outputs.new_tag }}
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache,mode=max
+
+      - name: Trigger Dokploy Deployments (prod)
+        if: steps.check_skip.outputs.should_run == 'true'
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          WEBHOOKS: ${{ join(matrix.service.webhooks_prod, ' ') }}
+        run: |
+          if [ -z "$WEBHOOKS" ]; then
+            echo "no prod webhooks for banexcoin-${{ matrix.service.name }}"
+            exit 0
+          fi
+
+          for hook in $WEBHOOKS; do
+            echo "[prod] notifying Dokploy: banexcoin-${{ matrix.service.name }} (webhook: $hook)..."
+            curl -L -X GET --fail-with-body "$DOKPLOY_URL/api/deploy/$hook"
+            echo
+          done
+
+      # ── TEST ───────────────────────────────────────────────────────────
+      - name: Build and Push Image (test)
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.file }}
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_TEST_API_URL }}
+            NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_TEST_BASE_URL }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:test
+            ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:${{ needs.release.outputs.new_tag }}-test
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test,mode=max
+
+      - name: Trigger Dokploy Deployments (test)
+        if: steps.check_skip.outputs.should_run == 'true'
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          WEBHOOKS: ${{ join(matrix.service.webhooks_test, ' ') }}
+        run: |
+          if [ -z "$WEBHOOKS" ]; then
+            echo "no test webhooks for banexcoin-${{ matrix.service.name }}"
+            exit 0
+          fi
+
+          for hook in $WEBHOOKS; do
+            echo "[test] notifying Dokploy: banexcoin-${{ matrix.service.name }} (webhook: $hook)..."
+            curl -L -X GET --fail-with-body "$DOKPLOY_URL/api/deploy/$hook"
+            echo
+          done

@@ -1,0 +1,8 @@
+web:
+  - 'apps/frontend/**'
+private:
+  - 'apps/api/private/**'
+public:
+  - 'apps/api/public/**'
+ai:
+  - 'apps/api/ai/**'

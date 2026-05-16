@@ -1,0 +1,19 @@
+{
+  "name": "banexcoin-6plumas",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "BanexReintegra — QR cashback engine + anomaly detection for Banexcoin Bolivia.",
+  "scripts": {
+    "compose": "docker compose up -d",
+    "compose:build": "docker compose up --build -d",
+    "down": "docker compose down",
+    "dev:web": "pnpm -F=frontend dev",
+    "dev:private": "pnpm -F=private start:dev",
+    "dev:public": "bun --cwd apps/api/public run dev",
+    "dev:ai": "uv --directory apps/api/ai run uvicorn src.main:app --reload --port 8081",
+    "build": "pnpm --parallel build",
+    "lint": "pnpm --parallel lint",
+    "format": "pnpm --parallel format"
+  },
+  "packageManager": "pnpm@10.33.2"
+}

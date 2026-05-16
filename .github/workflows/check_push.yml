@@ -1,0 +1,89 @@
+name: CI_VALIDATE_PR
+
+on:
+  pull_request:
+    branches: ['main']
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      private: ${{ steps.filter.outputs.private }}
+      public: ${{ steps.filter.outputs.public }}
+      ai: ${{ steps.filter.outputs.ai }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Filter Changed Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: '.github/filters.yml'
+
+  validate-docker:
+    needs: changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - { id: 'web',     name: 'web-client', context: './apps/frontend',    file: './apps/frontend/Dockerfile' }
+          - { id: 'private', name: 'private-api', context: './apps/api/private', file: './apps/api/private/Dockerfile' }
+          - { id: 'public',  name: 'public-api',  context: './apps/api/public',  file: './apps/api/public/Dockerfile' }
+          - { id: 'ai',      name: 'ai-api',      context: './apps/api/ai',      file: './apps/api/ai/Dockerfile' }
+
+    steps:
+      - name: Check if service should run
+        id: check_skip
+        run: |
+          SHOULD_RUN="${{ needs.changes.outputs[matrix.service.id] }}"
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Check & Warm Cache (prod)
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.file }}
+          push: false
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache,mode=max
+
+      - name: Build Check & Warm Cache (test)
+        if: steps.check_skip.outputs.should_run == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.file }}
+          push: false
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test,mode=max

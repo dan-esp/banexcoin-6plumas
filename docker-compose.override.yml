@@ -1,0 +1,26 @@
+services:
+  redis:
+    ports:
+      - '6379'
+    volumes:
+      - ./.containers/redis-data:/data
+
+  private-database:
+    environment:
+      - POSTGRES_DB=private-db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432'
+    volumes:
+      - ./.containers/private-database-data:/var/lib/postgresql/data
+
+  public-database:
+    environment:
+      - POSTGRES_DB=public-db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432'
+    volumes:
+      - ./.containers/public-database-data:/var/lib/postgresql/data
