@@ -17,7 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-import type { ConsoleDataSource, PublicBatchDto } from "../data";
+import type {
+  ConsoleDataSource,
+  ConsoleNotice,
+  PublicBatchDto,
+} from "../data";
 import { brandGradient, brandGradientText } from "../lib";
 
 const navItems = [
@@ -98,11 +102,12 @@ function SidebarNav({ batch }: { batch: PublicBatchDto }) {
 
 function Topbar({
   dataSource,
-  error,
+  notice,
 }: {
   dataSource: ConsoleDataSource;
-  error: string | null;
+  notice: ConsoleNotice;
 }) {
+  const apiConnected = dataSource === "api" && notice?.tone !== "error";
   return (
     <header className="sticky top-0 z-20 border-[var(--brand-border)] border-b bg-[rgba(23,23,36,0.86)] backdrop-blur-xl">
       <div className="flex min-h-20 flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-10">
@@ -115,8 +120,8 @@ function Topbar({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Badge tone={dataSource === "api" && !error ? "success" : "warning"}>
-            {dataSource === "api" && !error ? "API connected" : "Fixture mode"}
+          <Badge tone={apiConnected ? "success" : "warning"}>
+            {apiConnected ? "API connected" : "Fixture mode"}
           </Badge>
           <div className="relative w-full sm:w-64">
             <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-white/40" />
@@ -146,18 +151,18 @@ function Topbar({
 export function AppShell({
   batch,
   dataSource,
-  error,
+  notice,
   children,
 }: PropsWithChildren<{
   batch: PublicBatchDto;
   dataSource: ConsoleDataSource;
-  error: string | null;
+  notice: ConsoleNotice;
 }>) {
   return (
     <div className="min-h-screen bg-[var(--brand-bg)] text-foreground">
       <SidebarNav batch={batch} />
       <div className="lg:pl-72">
-        <Topbar dataSource={dataSource} error={error} />
+        <Topbar dataSource={dataSource} notice={notice} />
         <main className="grid gap-7 p-5 lg:p-10">{children}</main>
       </div>
     </div>

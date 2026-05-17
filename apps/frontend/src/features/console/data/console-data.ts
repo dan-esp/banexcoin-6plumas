@@ -41,7 +41,12 @@ export async function getConsoleData(): Promise<ConsoleDataState> {
       disbursements: fixtureDisbursements,
       anomalies: [],
       source: "fixture",
-      error: "Sign in to load live data from the public API.",
+      notice: {
+        tone: "info",
+        title: "Sign in to load live data",
+        message:
+          "You are viewing fixture data because no Clerk session token was available.",
+      },
     };
   }
 
@@ -59,7 +64,12 @@ export async function getConsoleData(): Promise<ConsoleDataState> {
         disbursements: [],
         anomalies: [],
         source: "api",
-        error: "No monthly batches were returned by the public API.",
+        notice: {
+          tone: "info",
+          title: "No batches yet",
+          message:
+            "The public API is connected, but no monthly cashback batches have been processed. Upload a report to populate the console.",
+        },
       };
     }
 
@@ -84,7 +94,7 @@ export async function getConsoleData(): Promise<ConsoleDataState> {
       disbursements: disbursements.data,
       anomalies: anomalies.data,
       source: "api",
-      error: null,
+      notice: null,
     };
   } catch (error) {
     return {
@@ -93,7 +103,11 @@ export async function getConsoleData(): Promise<ConsoleDataState> {
       disbursements: fixtureDisbursements,
       anomalies: [],
       source: "fixture",
-      error: error instanceof Error ? error.message : "Public API unavailable",
+      notice: {
+        tone: "error",
+        title: "Public API unavailable",
+        message: `${error instanceof Error ? error.message : "Unknown error"}. Rendering stable fixture data so the console remains reviewable.`,
+      },
     };
   }
 }
