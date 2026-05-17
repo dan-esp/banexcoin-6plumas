@@ -2,9 +2,6 @@ import type {
   Batch,
   CashbackResult,
   QrTransaction,
-  Batch,
-  CashbackResult,
-  QrTransaction,
 } from "@prisma/client"
 
 function toIso(value: Date | null | undefined) {

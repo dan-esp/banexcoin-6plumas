@@ -61,6 +61,27 @@ export class Batch {
     fallbackReason?: string;
   };
 
+  @Prop({ type: Object })
+  approval?: {
+    approvedAt: Date;
+    approvedBy: string;
+    totalUsersAnalyzed: number;
+    usersQualifyingForCashback: number;
+    totalCashbackUsdt: string;
+  };
+
+  @Prop({ type: Object })
+  exportMetadata?: {
+    exportedAt: Date;
+    exportedBy: string;
+    exportFormat: 'banextransfer_csv';
+    exportChecksum: string;
+    exportedAccountsCount: number;
+    exportedTotalUsdt: string;
+    exportReferencePrefix: string;
+    exportFilename: string;
+  };
+
   @Prop()
   payoutOracleRate?: number;
 
