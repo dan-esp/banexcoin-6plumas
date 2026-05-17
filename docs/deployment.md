@@ -51,25 +51,25 @@ Estas viajan como `ARG` al `Dockerfile` del frontend y quedan **incrustadas** en
 
 ### 2.2 Runtime — `private-api` (NestJS)
 
-| Variable           | Obligatoria | Default                                       | Notas                               |
-| ------------------ | ----------- | --------------------------------------------- | ----------------------------------- |
-| `PORT`             |             | `8080`                                        | Puerto interno                      |
-| `NODE_ENV`         |             | `production`                                  |                                     |
-| `MONGODB_URI`      | ✅          | `mongodb://mongo:27017/banexcoin`             | URI de MongoDB (con auth en prod)   |
-| `AI_SERVICE_URL`   | ✅          | `http://ai:8080`                              | URL interna al servicio AI          |
-| `JWT_SECRET`       | ✅          | —                                             | String aleatorio fuerte (32+ bytes) |
-| `JWT_ISSUER`       |             | `banexcoin`                                   |                                     |
-| `JWT_AUDIENCE`     |             | `banexcoin-internal`                          |                                     |
+| Variable                    | Obligatoria | Default                           | Notas                                      |
+| --------------------------- | ----------- | --------------------------------- | ------------------------------------------ |
+| `PORT`                      |             | `8080`                            | Puerto interno                             |
+| `NODE_ENV`                  |             | `production`                      |                                            |
+| `MONGODB_URI`               | ✅          | `mongodb://mongo:27017/banexcoin` | URI de MongoDB (con auth en prod)          |
+| `AI_SERVICE_URL`            | ✅          | `http://ai:8080`                  | URL interna al servicio AI                 |
+| `CLERK_SECRET_KEY`          | ✅          | —                                 | Secret runtime de Clerk                    |
+| `CLERK_AUTHORIZED_PARTIES`  |             | —                                 | Orígenes permitidos, separados por coma; dejar vacío para pruebas locales |
 
 ### 2.3 Runtime — `public-api` (Hono + Bun + Prisma)
 
-| Variable           | Obligatoria | Default                           | Notas                            |
-| ------------------ | ----------- | --------------------------------- | -------------------------------- |
-| `PORT`             |             | `8080`                            |                                  |
-| `NODE_ENV`         |             | `production`                      |                                  |
-| `MONGODB_URI`      | ✅          | `mongodb://mongo:27017/banexcoin` | Misma instancia que private-api  |
-| `PRIVATE_API_URL`  | ✅          | `http://private-api:8080`         | URL interna al private-api       |
-| `JWT_SECRET`       | ✅          | —                                 | Mismo secret que el private-api  |
+| Variable                    | Obligatoria | Default                           | Notas                                   |
+| --------------------------- | ----------- | --------------------------------- | --------------------------------------- |
+| `PORT`                      |             | `8080`                            |                                         |
+| `NODE_ENV`                  |             | `production`                      |                                         |
+| `MONGODB_URI`               | ✅          | `mongodb://mongo:27017/banexcoin` | Misma instancia que private-api         |
+| `PRIVATE_API_URL`           | ✅          | `http://private-api:8080`         | URL interna al private-api              |
+| `CLERK_SECRET_KEY`          | ✅          | —                                 | Secret runtime de Clerk                 |
+| `CLERK_AUTHORIZED_PARTIES`  |             | —                                 | Orígenes permitidos, separados por coma; dejar vacío para pruebas locales |
 
 ### 2.4 Runtime — `ai` (FastAPI)
 
@@ -82,15 +82,20 @@ Prefijo `AI_`. Cargados vía `pydantic-settings` desde env.
 | `AI_CONTAMINATION`   | `auto`                        | `auto` o float `[0,0.5]`                             |
 | `AI_N_ESTIMATORS`    | `200`                         | Árboles del bosque                                   |
 | `AI_RANDOM_STATE`    | `42`                          |                                                      |
+| `CLERK_JWKS_URL`     | —                             | JWKS de Clerk para validar bearer tokens             |
+| `CLERK_AUTHORIZED_PARTIES` | —                        | Orígenes permitidos, separados por coma; dejar vacío para pruebas locales |
 
 ### 2.5 Runtime — `frontend` (Next standalone)
 
-| Variable     | Default     | Notas                                                  |
-| ------------ | ----------- | ------------------------------------------------------ |
-| `PORT`       | `8080`      |                                                        |
-| `HOSTNAME`   | `0.0.0.0`   | Requerido por `next start` standalone                  |
-| `NODE_ENV`   | `production`|                                                        |
-| `API_URL`    | —           | URL interna al public-api (server-side fetches en Next) |
+| Variable                            | Default     | Notas                                                  |
+| ----------------------------------- | ----------- | ------------------------------------------------------ |
+| `PORT`                              | `8080`      |                                                        |
+| `HOSTNAME`                          | `0.0.0.0`   | Requerido por `next start` standalone                  |
+| `NODE_ENV`                          | `production`|                                                        |
+| `API_URL`                           | —           | URL interna al public-api (server-side fetches en Next) |
+| `CLERK_SECRET_KEY`                  | —           | Secret runtime para middleware de Clerk                |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | —           | Publishable key pública de Clerk                       |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`     | `/sign-in`  | Ruta de inicio de sesión                               |
 
 ## 3. Secrets en GitHub Actions
 
@@ -124,8 +129,12 @@ No son secrets — los IDs en sí no permiten deploy sin la `DOKPLOY_URL`.
 
 En **Dokploy → cada servicio → Environment** define los runtime vars de §2.2–2.5. Críticos:
 
-- `JWT_SECRET` — generar con `openssl rand -base64 48`. **Mismo** valor en `private-api` y
-  `public-api`.
+- `CLERK_SECRET_KEY` — secret runtime de Clerk. Definir en frontend, private-api y public-api.
+- `CLERK_JWKS_URL` — endpoint JWKS de Clerk. Definir en el servicio AI.
+- `CLERK_AUTHORIZED_PARTIES` — orígenes permitidos para tokens Clerk, por ejemplo
+  `https://app.banexcoin.com.bo`.
+- BanexReintegra es login-only: crea o invita usuarios desde Clerk Dashboard y desactiva
+  registros públicos en Clerk. La app no expone flujo propio de registro.
 - `MONGODB_URI` — `mongodb://user:pass@mongo:27017/banexcoin?authSource=admin`. Mismo URI en
   ambas APIs (private escribe vía Mongoose, public lee vía Prisma).
 - `AI_SERVICE_URL`, `PRIVATE_API_URL` — URLs internas (service discovery de Dokploy).
@@ -148,7 +157,8 @@ En **Dokploy → cada servicio → Environment** define los runtime vars de §2.
 | ------------------------------------------------ | --------------------------------------------------------- |
 | `MONGO_USER required` al `prod:up`               | Falta `.env.prod` o variable sin valor                    |
 | Frontend no llega al API en browser              | `NEXT_PUBLIC_API_URL` apunta al host equivocado (build-time, requiere rebuild) |
-| `private-api` reinicia en loop                   | `JWT_SECRET` vacío o MongoDB unreachable — `pnpm prod:logs` |
+| Rutas protegidas devuelven 401                   | Falta bearer token Clerk o `CLERK_SECRET_KEY` / `CLERK_JWKS_URL` está mal configurado |
+| `private-api` reinicia en loop                   | `CLERK_SECRET_KEY` vacío o MongoDB unreachable — `pnpm prod:logs` |
 | `public-api` arranca pero falla en queries       | `prisma generate` no se ejecutó — reconstruir imagen      |
 | `ai` healthcheck falla                           | El binding del puerto 8080 (interno) no está activo — revisa `uvicorn` logs |
 | MongoDB no levanta tras `prod:nuke`              | Normal — primera corrida crea la DB vacía automáticamente |

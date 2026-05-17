@@ -13,6 +13,7 @@ node_modules/
 
 # ── Build outputs ─────────────────────────────────────────────────────────
 dist/
+dist.broken-*/
 build/
 out/
 .next/
@@ -33,7 +34,6 @@ __pycache__/
 .pytest_cache/
 
 # ── ML artefacts ──────────────────────────────────────────────────────────
-data/
 *.joblib
 
 # ── Docker / Compose volumes ──────────────────────────────────────────────

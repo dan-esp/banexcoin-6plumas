@@ -35,7 +35,10 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=pruned  --chown=node-app:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=node-app:nodejs /app/dist         ./dist
 COPY --from=builder --chown=node-app:nodejs /app/package.json ./package.json
+COPY --chown=node-app:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 USER node-app
 EXPOSE 8080
 ENV PORT=8080
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "dist/main.js"]

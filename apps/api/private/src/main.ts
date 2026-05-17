@@ -19,23 +19,22 @@ async function bootstrap() {
   app.enableCors();
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('BanexReintegra ETL API')
+    .setTitle('BanexReintegra Private API')
     .setDescription(
-      'File ingestion and transformation layer for the BanexReintegra cashback system.\n\n' +
-        '**Workflow:**\n' +
-        '1. `POST /etl/upload/qr-payments` — upload your CSV or XLSX Pago QR file\n' +
-        '2. `GET /etl/status` — confirm how many rows were loaded\n' +
-        '3. `GET /etl/preview/qr-payments` — inspect the first 10 parsed rows\n' +
-        '4. `DELETE /etl/clear/qr-payments` — reset the store when uploading a new file\n\n' +
-        '**Supported entity types:** `qr-payments`\n\n' +
-        '**Supported file formats:** CSV (UTF-8, comma-separated), XLSX',
+      'Internal API for deterministic BanexReintegra ETL, validation, cashback review, approval, and export workflows.',
     )
     .setVersion('1.0')
+    .addBearerAuth()
+    .addTag('health', 'Service status and readiness checks')
+    .addTag('auth', 'Authenticated session inspection')
     .addTag('ETL — File Ingestion', 'Upload and inspect QR payment transaction files')
+    .addTag('Processing — Cashback Calculation', 'Calculate and review payout results')
+    .addTag('batches', 'Batch processing, storage, and export workflows')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document, {
+    jsonDocumentUrl: 'api/docs-json',
     swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: 2,
@@ -49,4 +48,4 @@ async function bootstrap() {
   console.log(`Swagger UI available at: http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+void bootstrap();

@@ -10,14 +10,17 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "migrate": "node -e \"console.log('No private API database migrations configured yet')\"",
+    "migrate:deploy": "npm run migrate --if-present",
     "lint": "eslint \"src/**/*.ts\" --fix"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.9",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/swagger": "^8.1.1",
+    "@nestjs/swagger": "^11.4.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "csv-parse": "^5.6.0",

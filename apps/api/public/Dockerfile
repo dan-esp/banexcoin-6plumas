@@ -21,8 +21,14 @@ RUN apk add --no-cache curl \
 COPY --from=builder --chown=bun-app:bunjs /app/dist                         ./dist
 COPY --from=builder --chown=bun-app:bunjs /app/node_modules/.prisma         ./node_modules/.prisma
 COPY --from=builder --chown=bun-app:bunjs /app/node_modules/@prisma         ./node_modules/@prisma
+COPY --from=builder --chown=bun-app:bunjs /app/node_modules/prisma          ./node_modules/prisma
+COPY --from=builder --chown=bun-app:bunjs /app/node_modules/.bin            ./node_modules/.bin
+COPY --from=builder --chown=bun-app:bunjs /app/prisma                       ./prisma
 COPY --from=builder --chown=bun-app:bunjs /app/package.json                 ./package.json
+COPY --chown=bun-app:bunjs docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 USER bun-app
 EXPOSE 8080
 ENV PORT=8080
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["bun", "run", "dist/index.js"]

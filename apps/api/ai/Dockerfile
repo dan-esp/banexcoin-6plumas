@@ -31,6 +31,8 @@ RUN apt-get update \
 
 COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
 COPY --chown=appuser:appgroup src /app/src
+COPY --chown=appuser:appgroup docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
@@ -40,4 +42,5 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 USER appuser
 EXPOSE 8080
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
