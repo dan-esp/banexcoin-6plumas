@@ -40,6 +40,17 @@ export class Batch {
 
   @Prop({ type: [Object], default: [] })
   mapperErrors: Record<string, unknown>[];
+
+  @Prop({ type: Object, required: true })
+  oracle: {
+    rate: number;
+    source: string;
+    fetchedAt: string;
+    mode: string;
+    status: string;
+    usedFallback: boolean;
+    fallbackReason?: string;
+  };
 }
 
 export const BatchSchema = SchemaFactory.createForClass(Batch);

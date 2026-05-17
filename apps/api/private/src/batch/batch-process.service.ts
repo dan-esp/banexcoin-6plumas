@@ -6,6 +6,7 @@ import { EtlStore } from '../etl/store/etl-store.service.js';
 import { ProcessingService } from '../processing/processing.service.js';
 import { CalculateRequestDto } from '../processing/dto/calculate-request.dto.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
+import { OracleService } from './oracle.service.js';
 import type {
   IBatchRepository,
   BatchSavePayload,
@@ -15,7 +16,6 @@ export interface ProcessBatchDto {
   batchName: string;
   tiers: TierLevelDto[];
   minimumBob: number;
-  // TODO: replace with locked oracle rate from oracle service
   outputFxRate?: number;
   manualReviewThreshold?: number;
 }
@@ -24,6 +24,13 @@ export interface ProcessBatchResult {
   batchId: string;
   batchName: string;
   calculatedAt: Date;
+  oracle: {
+    rate: number;
+    source: string;
+    mode: string;
+    usedFallback: boolean;
+    fallbackReason?: string;
+  };
   audit: Record<string, unknown>;
   warnings: string[];
   errors: string[];
@@ -40,6 +47,7 @@ export class BatchProcessService {
     private readonly etlService: EtlService,
     private readonly etlStore: EtlStore,
     private readonly processingService: ProcessingService,
+    private readonly oracleService: OracleService,
     @Inject('BATCH_REPOSITORY')
     private readonly batchRepository: IBatchRepository,
   ) {}
@@ -48,6 +56,9 @@ export class BatchProcessService {
     file: Express.Multer.File,
     dto: ProcessBatchDto,
   ): Promise<ProcessBatchResult> {
+    // Resolve payout FX rate: live oracle → request override → fixed fallback
+    const oracleCtx = await this.oracleService.resolveRate(dto.outputFxRate);
+
     const uploadResult = await this.etlService.processUpload(
       file,
       EntityType.QR_PAYMENTS,
@@ -59,7 +70,7 @@ export class BatchProcessService {
       period: dto.batchName,
       tiers: dto.tiers,
       minimumBob: dto.minimumBob,
-      outputFxRate: dto.outputFxRate,
+      outputFxRate: oracleCtx.rate,
       manualReviewThreshold: dto.manualReviewThreshold,
     };
 
@@ -73,6 +84,7 @@ export class BatchProcessService {
       mapperErrors: uploadResult.errors,
       rows,
       report,
+      oracleContext: oracleCtx,
     };
 
     const batchId = await this.batchRepository.save(payload);
@@ -81,6 +93,13 @@ export class BatchProcessService {
       batchId,
       batchName: dto.batchName,
       calculatedAt: report.calculatedAt,
+      oracle: {
+        rate: oracleCtx.rate,
+        source: oracleCtx.source,
+        mode: oracleCtx.mode,
+        usedFallback: oracleCtx.usedFallback,
+        fallbackReason: oracleCtx.fallbackReason,
+      },
       audit: report.audit as unknown as Record<string, unknown>,
       warnings: report.warnings,
       errors: report.errors,

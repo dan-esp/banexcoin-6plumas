@@ -31,6 +31,7 @@ export class MongoBatchRepository implements IBatchRepository {
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
       mapperErrors: payload.mapperErrors as unknown as Record<string, unknown>[],
+      oracle: payload.oracleContext,
     });
 
     if (payload.rows.length > 0) {

@@ -23,6 +23,7 @@ export class JsonBatchRepository implements IBatchRepository {
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
       mapperErrors: payload.mapperErrors,
+      oracle: payload.oracleContext,
       rows: payload.rows,
       report: payload.report,
     };
