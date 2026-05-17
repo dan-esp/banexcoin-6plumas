@@ -169,9 +169,7 @@ function Topbar() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <UserButton
-            appearance={{ elements: { avatarBox: "size-9" } }}
-          />
+          <UserButton appearance={{ elements: { avatarBox: "size-9" } }} />
         </div>
       </div>
     </header>

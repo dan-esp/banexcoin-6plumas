@@ -22,5 +22,9 @@
     "prod:ps": "docker compose -f docker-compose.prod.yml --env-file .env.prod ps",
     "prod:health": "docker compose -f docker-compose.prod.yml --env-file .env.prod ps --format 'table {{.Name}}\t{{.Status}}\t{{.Ports}}'"
   },
-  "packageManager": "pnpm@10.33.2"
+  "packageManager": "pnpm@10.33.2",
+  "workspaces": [
+    "./apps/frontend",
+    "./apps/api/private"
+  ]
 }

@@ -9,6 +9,7 @@ import { AuditTimeline } from "./audit-timeline";
 import { BrandHeader } from "./brand-header";
 import { CalculationReview } from "./calculation-review";
 import { ExecutiveSummary } from "./executive-summary";
+import { ExportActionCard } from "./export-action-card";
 import { KpiCard } from "./kpi-card";
 import { OracleContextCard } from "./oracle-context-card";
 import { ErrorState } from "./states";
@@ -20,6 +21,7 @@ export function ConsoleScreen({
   batch,
   results,
   anomalies,
+  disbursements,
   transactions,
   oracle,
   error,
@@ -63,6 +65,7 @@ export function ConsoleScreen({
       <ValidationBanner batch={batch} />
       <AnomaliesPanel initialAnomalies={anomalies} />
       <CalculationReview batch={batch} results={results} />
+      <ExportActionCard batch={batch} disbursements={disbursements} />
       <section className="grid gap-4">
         <div>
           <h2 className="font-bold text-2xl text-foreground">

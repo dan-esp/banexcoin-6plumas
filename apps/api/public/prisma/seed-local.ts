@@ -6,7 +6,7 @@ process.env.MONGODB_URI ??=
 
 const prisma = new PrismaClient()
 
-type SeedStatus = "approved" | "exported" | "under_review"
+type SeedLifecycleStatus = "approved" | "exported" | "under_review"
 
 type SeedAccount = {
   accountNumber: number
@@ -24,7 +24,7 @@ type SeedBatch = {
   period: string
   year: number
   month: number
-  status: SeedStatus
+  lifecycleStatus: SeedLifecycleStatus
   validationStatus: "clean" | "warnings" | "blocked"
   warningRows: number
   blockedRows: number
@@ -54,7 +54,7 @@ const batches: SeedBatch[] = [
     period: "May 2026",
     year: 2026,
     month: 5,
-    status: "approved",
+    lifecycleStatus: "approved",
     validationStatus: "clean",
     warningRows: 2,
     blockedRows: 0,
@@ -97,7 +97,7 @@ const batches: SeedBatch[] = [
     period: "April 2026",
     year: 2026,
     month: 4,
-    status: "exported",
+    lifecycleStatus: "exported",
     validationStatus: "clean",
     warningRows: 0,
     blockedRows: 0,
@@ -132,7 +132,7 @@ const batches: SeedBatch[] = [
     period: "March 2026",
     year: 2026,
     month: 3,
-    status: "under_review",
+    lifecycleStatus: "under_review",
     validationStatus: "blocked",
     warningRows: 4,
     blockedRows: 2,
@@ -380,7 +380,7 @@ async function seedPublicBatch(batch: SeedBatch) {
     ? new Date(Date.UTC(batch.year, batch.month - 1, 30, 15, 0))
     : null
   const cashbackRunData = {
-    status: batch.status,
+    status: "published",
     validation_status: batch.validationStatus,
     total_users: allParticipants(batch).length,
     total_transactions: report.audit.rowsProcessed,
@@ -402,7 +402,9 @@ async function seedPublicBatch(batch: SeedBatch) {
     approved_by: batch.approvedBy,
     approved_at: approvedAt,
     exported_at: exportedAt,
-    export_ready: batch.status === "approved" || batch.status === "exported",
+    export_ready:
+      batch.lifecycleStatus === "approved" ||
+      batch.lifecycleStatus === "exported",
   }
 
   const existingRun = await prisma.cashbackRun.findUnique({
@@ -516,7 +518,10 @@ async function seedPublicBatch(batch: SeedBatch) {
     where: { cashback_run_id: cashbackRun.id },
   })
 
-  if (batch.status === "approved" || batch.status === "exported") {
+  if (
+    batch.lifecycleStatus === "approved" ||
+    batch.lifecycleStatus === "exported"
+  ) {
     await prisma.disbursement.createMany({
       data: batch.participants.map((participant) => {
         const totals = totalsFor(participant, batch.oracleRate)
@@ -643,9 +648,9 @@ async function seedPrivateExportDocs(
             batchName: batch.period,
             savedAt: generatedAt,
             status:
-              batch.status === "exported"
+              batch.lifecycleStatus === "exported"
                 ? "EXPORTED"
-                : batch.status === "approved"
+                : batch.lifecycleStatus === "approved"
                   ? "APPROVED"
                   : "CALCULATED",
             rowsLoaded: report.audit.totalRowsFromStore,
