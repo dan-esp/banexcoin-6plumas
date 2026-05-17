@@ -15,7 +15,8 @@ const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
   imports: [
     EtlModule,
     ProcessingModule,
-    ...(isMongoDb ? [DatabaseModule, OracleModule] : []),
+    OracleModule,
+    ...(isMongoDb ? [DatabaseModule] : []),
     BatchModule,
   ],
   controllers: [AppController],

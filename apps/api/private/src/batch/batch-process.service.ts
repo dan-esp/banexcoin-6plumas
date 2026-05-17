@@ -6,7 +6,8 @@ import { EtlStore } from '../etl/store/etl-store.service.js';
 import { ProcessingService } from '../processing/processing.service.js';
 import { CalculateRequestDto } from '../processing/dto/calculate-request.dto.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
-import { OracleService } from './oracle.service.js';
+import { OracleService } from '../oracle/oracle.service.js';
+import { ORACLE_STATUS, ORACLE_MODE } from '../oracle/oracle.constants.js';
 import type {
   IBatchRepository,
   BatchSavePayload,
@@ -56,8 +57,18 @@ export class BatchProcessService {
     file: Express.Multer.File,
     dto: ProcessBatchDto,
   ): Promise<ProcessBatchResult> {
-    // Resolve payout FX rate: live oracle → request override → fixed fallback
-    const oracleCtx = await this.oracleService.resolveRate(dto.outputFxRate);
+    // Resolve payout FX rate using the integrated Oracle service
+    const currentRateResponse = await this.oracleService.getCurrentRate();
+    
+    // Use manual override if provided, otherwise use current oracle rate
+    const rate = dto.outputFxRate ?? currentRateResponse.rate!;
+    const oracleCtx = {
+      rate,
+      source: dto.outputFxRate ? 'manual-override' : (currentRateResponse.source ?? 'oracle'),
+      mode: dto.outputFxRate ? ORACLE_MODE.MANUAL : ORACLE_MODE.LIVE,
+      usedFallback: currentRateResponse.status !== 'valid',
+      fallbackReason: dto.outputFxRate ? undefined : currentRateResponse.status,
+    };
 
     const uploadResult = await this.etlService.processUpload(
       file,
@@ -84,7 +95,15 @@ export class BatchProcessService {
       mapperErrors: uploadResult.errors,
       rows,
       report,
-      oracleContext: oracleCtx,
+      oracleContext: {
+        rate: oracleCtx.rate,
+        source: oracleCtx.source,
+        fetchedAt: new Date(),
+        mode: oracleCtx.mode,
+        status: dto.outputFxRate ? ORACLE_STATUS.VALID : currentRateResponse.status,
+        usedFallback: oracleCtx.usedFallback,
+        fallbackReason: oracleCtx.fallbackReason,
+      },
     };
 
     const batchId = await this.batchRepository.save(payload);
