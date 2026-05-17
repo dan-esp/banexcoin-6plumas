@@ -317,5 +317,91 @@ export const openApiDocument = {
         },
       },
     },
+    "/users": {
+      get: {
+        tags: ["legacy"],
+        summary: "List users (legacy)",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          "200": { description: "Legacy users list." },
+          "401": { description: "Missing or invalid bearer token." },
+        },
+      },
+    },
+    "/users/{account_number}": {
+      get: {
+        tags: ["legacy"],
+        summary: "Get user by account number (legacy)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "account_number", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        responses: {
+          "200": { description: "Account details." },
+          "401": { description: "Missing or invalid bearer token." },
+          "404": { description: "Account not found." },
+        },
+      },
+    },
+    "/transactions": {
+      get: {
+        tags: ["legacy"],
+        summary: "List transactions (legacy)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "account_number", in: "query", schema: { type: "integer" } },
+          { name: "limit", in: "query", schema: { type: "integer", default: 50 } },
+          { name: "offset", in: "query", schema: { type: "integer", default: 0 } },
+        ],
+        responses: {
+          "200": { description: "Legacy transactions list." },
+          "401": { description: "Missing or invalid bearer token." },
+        },
+      },
+    },
+    "/monthly-aggregations": {
+      get: {
+        tags: ["legacy"],
+        summary: "List monthly aggregations (legacy)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "account_number", in: "query", schema: { type: "integer" } },
+        ],
+        responses: {
+          "200": { description: "Legacy monthly aggregations." },
+          "401": { description: "Missing or invalid bearer token." },
+        },
+      },
+    },
+    "/cashback-runs": {
+      get: {
+        tags: ["legacy"],
+        summary: "List cashback runs (legacy)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "limit", in: "query", schema: { type: "integer", default: 50 } },
+          { name: "offset", in: "query", schema: { type: "integer", default: 0 } },
+        ],
+        responses: {
+          "200": { description: "Legacy cashback runs." },
+          "401": { description: "Missing or invalid bearer token." },
+        },
+      },
+    },
+    "/cashback-runs/{id}/disbursements": {
+      get: {
+        tags: ["legacy"],
+        summary: "List disbursements for a cashback run (legacy)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: {
+          "200": { description: "Legacy run disbursements." },
+          "401": { description: "Missing or invalid bearer token." },
+          "404": { description: "Run not found." },
+        },
+      },
+    },
   },
 } as const

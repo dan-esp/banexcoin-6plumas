@@ -5,21 +5,27 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { RequestWithClerkAuth } from '../auth/clerk-auth.guard.js';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { BatchProcessService, ProcessBatchDto } from './batch-process.service.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
 
 @ApiTags('batches')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
 @Controller('batches')
 export class BatchController {
   constructor(private readonly batchProcessService: BatchProcessService) {}
@@ -64,6 +70,7 @@ export class BatchController {
     @Body('minimumBob') minimumBobRaw: string,
     @Body('outputFxRate') outputFxRateRaw?: string,
     @Body('manualReviewThreshold') manualReviewThresholdRaw?: string,
+    @Req() req?: RequestWithClerkAuth,
   ) {
     if (!file) {
       throw new BadRequestException('A file is required.');
@@ -103,6 +110,6 @@ export class BatchController {
       manualReviewThreshold,
     };
 
-    return this.batchProcessService.process(file, dto);
+    return this.batchProcessService.process(file, dto, req?.auth?.token);
   }
 }

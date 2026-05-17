@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .auth import ClerkAuthMiddleware
 from .io import parse_upload
@@ -12,6 +13,12 @@ from .schemas import (
     PredictResponse,
     TrainRequest,
     TrainResponse,
+)
+
+bearer_scheme = HTTPBearer(
+    bearerFormat="JWT",
+    description="Clerk session JWT. Paste the raw token; the 'Bearer ' prefix is added automatically.",
+    auto_error=False,
 )
 
 app = FastAPI(
@@ -48,7 +55,11 @@ def health() -> dict[str, str]:
     tags=["model"],
     summary="Get current model metadata",
     description="Returns metadata for the current trained model.",
-    responses={404: {"description": "No model has been trained in this service instance."}},
+    responses={
+        401: {"description": "Missing or invalid bearer token."},
+        404: {"description": "No model has been trained in this service instance."},
+    },
+    dependencies=[Depends(bearer_scheme)],
 )
 def model_info() -> ModelInfo:
     m = get_store().current
@@ -69,7 +80,11 @@ def model_info() -> ModelInfo:
     tags=["training"],
     summary="Train model from JSON rows",
     description="Trains the anomaly model from explicit transaction rows.",
-    responses={400: {"description": "Training data is invalid or insufficient."}},
+    responses={
+        400: {"description": "Training data is invalid or insufficient."},
+        401: {"description": "Missing or invalid bearer token."},
+    },
+    dependencies=[Depends(bearer_scheme)],
 )
 def train(req: TrainRequest) -> TrainResponse:
     rows = [r.model_dump() for r in req.rows]
@@ -91,7 +106,11 @@ def train(req: TrainRequest) -> TrainResponse:
     tags=["training"],
     summary="Train model from an uploaded file",
     description="Trains the anomaly model from an uploaded CSV or workbook accepted by the parser.",
-    responses={400: {"description": "The uploaded file cannot be parsed or trained."}},
+    responses={
+        400: {"description": "The uploaded file cannot be parsed or trained."},
+        401: {"description": "Missing or invalid bearer token."},
+    },
+    dependencies=[Depends(bearer_scheme)],
 )
 async def train_upload(
     file: UploadFile = File(..., description="CSV or workbook file with transaction rows"),
@@ -118,8 +137,10 @@ async def train_upload(
     description="Scores submitted transactions with the current trained anomaly model.",
     responses={
         400: {"description": "Prediction rows do not match expected feature inputs."},
+        401: {"description": "Missing or invalid bearer token."},
         409: {"description": "No trained model is available for prediction."},
     },
+    dependencies=[Depends(bearer_scheme)],
 )
 def predict(req: PredictRequest) -> PredictResponse:
     rows = [r.model_dump() for r in req.rows]

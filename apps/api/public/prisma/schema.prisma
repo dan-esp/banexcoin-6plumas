@@ -99,6 +99,31 @@ model CashbackRun {
   @@unique([year, month])
 }
 
+model Anomaly {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  anomalyId       String    @unique
+  batchId         String
+  quoteId         Int
+  transactionId   String
+  accountId       Int
+  username        String
+  amountBob       Float
+  amountUsdt      Float
+  fxRate          Float
+  createdAt       DateTime
+  score           Float
+  isAnomaly       Boolean
+  status          String    @default("open")
+  detectedAt      DateTime
+  dismissedAt     DateTime?
+  dismissedBy     String?
+  dismissReason   String?
+
+  @@index([batchId])
+  @@index([status])
+  @@map("anomalies")
+}
+
 model Disbursement {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   cashback_run_id  String    @db.ObjectId

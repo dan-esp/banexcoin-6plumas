@@ -1,16 +1,20 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CalculateRequestDto } from './dto/calculate-request.dto.js';
 import { ProcessingReportDto } from './dto/processing-report.dto.js';
 import { ProcessingService } from './processing.service.js';
 
 @ApiTags('Processing — Cashback Calculation')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
 @Controller('processing')
 export class ProcessingController {
   constructor(private readonly processingService: ProcessingService) {}

@@ -81,12 +81,45 @@ export type PublicDisbursementDto = {
   exportReference: string | null;
 };
 
+export type AnomalyReviewStatus = "open" | "dismissed";
+
+export type PublicAnomalyDto = {
+  id: string;
+  anomalyId: string;
+  batchId: string;
+  transaction: {
+    quoteId: number;
+    transactionId: string;
+    accountId: number;
+    username: string;
+    createdAt: string;
+    amounts: {
+      bs: number;
+      usdt: number;
+      fxRate: number;
+    };
+  };
+  detection: {
+    source: "ai-isolation-forest";
+    score: number;
+    isAnomaly: boolean;
+    detectedAt: string;
+  };
+  review: {
+    status: AnomalyReviewStatus;
+    dismissedAt: string | null;
+    dismissedBy: string | null;
+    dismissReason: string | null;
+  };
+};
+
 export type ConsoleDataSource = "api" | "fixture";
 
 export type ConsoleDataState = {
   batch: PublicBatchDto;
   results: PublicResultDto[];
   disbursements: PublicDisbursementDto[];
+  anomalies: PublicAnomalyDto[];
   source: ConsoleDataSource;
   error: string | null;
 };

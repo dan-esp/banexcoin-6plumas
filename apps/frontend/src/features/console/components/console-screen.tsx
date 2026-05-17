@@ -2,6 +2,7 @@ import { Separator } from "@/components/ui/separator";
 
 import type { ConsoleDataState } from "../data";
 import { formatBs, formatCount, formatUsdt } from "../lib";
+import { AnomaliesPanel } from "./anomalies-panel";
 import { AppShell } from "./app-shell";
 import { AuditTimeline } from "./audit-timeline";
 import { BrandHeader } from "./brand-header";
@@ -18,6 +19,7 @@ export function ConsoleScreen({
   batch,
   results,
   disbursements,
+  anomalies,
   source,
   error,
 }: ConsoleDataState) {
@@ -58,6 +60,8 @@ export function ConsoleScreen({
 
       <ExecutiveSummary batch={batch} />
       <UploadFlow batch={batch} />
+      <AnomaliesPanel initialAnomalies={anomalies} />
+
       <CalculationReview batch={batch} results={results} />
       <ExportActionCard batch={batch} disbursements={disbursements} />
       <AuditTimeline batch={batch} />

@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Banknote,
   Building2,
   CircleDollarSign,
@@ -25,6 +26,7 @@ const navItems = [
   { label: "Validation", icon: ClipboardCheck, href: "#validation" },
   { label: "Tier rules", icon: CircleDollarSign, href: "#tiers" },
   { label: "Calculations", icon: Banknote, href: "#calculations" },
+  { label: "AI anomalies", icon: AlertTriangle, href: "#anomalies" },
   { label: "Export center", icon: Download, href: "#export" },
   { label: "Audit log", icon: History, href: "#audit" },
 ];

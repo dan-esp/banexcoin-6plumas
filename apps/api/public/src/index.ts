@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { Scalar } from '@scalar/hono-api-reference'
 import { accountRoutes } from './accounts/routes'
+import { anomalyRoutes } from './anomalies/routes'
 import { getAuth, requireAuth } from './auth/clerk'
 import { batchRoutes } from './batches/routes'
 import { prisma } from './db/client'
@@ -31,6 +32,7 @@ app.get('/', (c) =>
     links: {
       health: '/health',
       batches: '/v1/batches',
+      anomalies: '/v1/anomalies',
     },
   })
 )
@@ -44,6 +46,7 @@ app.get('/auth/session', (c) => {
 
 app.route('/v1/batches', batchRoutes)
 app.route('/v1/accounts', accountRoutes)
+app.route('/v1/anomalies', anomalyRoutes)
 app.route('/', legacyRoutes)
 
 app.notFound((c) =>
@@ -75,4 +78,9 @@ app.onError((error, c) => {
 process.on('SIGTERM', () => prisma.$disconnect())
 process.on('SIGINT', () => prisma.$disconnect())
 
-export default app
+const port = Number(process.env.PORT ?? 5000)
+
+export default {
+  port,
+  fetch: app.fetch,
+}
