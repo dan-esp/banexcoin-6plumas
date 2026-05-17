@@ -1,2 +1,4 @@
-ignoredBuiltDependencies:
-  - "@nestjs/core"
+allowBuilds:
+  '@nestjs/core': false
+  '@scarf/scarf': set this to true or false
+  unrs-resolver: false

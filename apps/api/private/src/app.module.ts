@@ -1,13 +1,8 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { EtlModule } from './etl/etl.module.js';
+import { ProcessingModule } from './processing/processing.module.js';
 
 @Module({
-  imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI ?? 'mongodb://mongo:27017/banexcoin'),
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [EtlModule, ProcessingModule],
 })
 export class AppModule {}
