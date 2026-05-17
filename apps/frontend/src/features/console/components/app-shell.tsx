@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import {
   Banknote,
   CircleSlash,
@@ -168,6 +169,9 @@ function Topbar() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          <UserButton
+            appearance={{ elements: { avatarBox: "size-9" } }}
+          />
         </div>
       </div>
     </header>
