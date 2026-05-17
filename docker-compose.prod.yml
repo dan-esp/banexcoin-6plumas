@@ -106,6 +106,8 @@ services:
       MONGODB_URI: mongodb://mongo:27017/banexcoin?replicaSet=rs0&directConnection=true
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY required}
       CLERK_AUTHORIZED_PARTIES: ${CLERK_AUTHORIZED_PARTIES:-}
+      SEED_ENABLED: ${SEED_ENABLED:-false}
+      SEED_FORCE: ${SEED_FORCE:-false}
     ports:
       - '${PUBLIC_API_HOST_PORT:-5000}:8080'
     depends_on:
@@ -136,6 +138,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
+      HOSTNAME: 0.0.0.0
       PRIVATE_API_URL: ${PRIVATE_API_URL:-http://private-api:8080}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY required}
     ports:

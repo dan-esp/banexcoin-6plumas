@@ -13,12 +13,25 @@ import { openApiDocument } from './openapi'
 import { HttpError } from './shared/http-error'
 
 const app = new Hono()
-const allowedOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:3000'
+
+function parseList(value: string | undefined): string[] | undefined {
+  const parsed = value
+    ?.split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  return parsed?.length ? parsed : undefined
+}
+
+const allowedOrigins = parseList(process.env.CORS_ORIGIN) ?? ['http://localhost:3000']
 
 app.use(
   '*',
   cors({
-    origin: allowedOrigin,
+    origin: (origin) => {
+      if (!origin) return undefined
+      return allowedOrigins.includes(origin) ? origin : undefined
+    },
     allowHeaders: ['Authorization', 'Content-Type'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     maxAge: 86400,

@@ -11,8 +11,8 @@ import {
 } from '../interfaces/batch-repository.interface.js';
 
 const DATA_DIR = join(process.cwd(), 'data', 'batches');
-const EXPORTED_STATUS = 'EXPORTED';
-const APPROVED_STATUS = 'APPROVED';
+const EXPORTED_STATUS = 'exported';
+const APPROVED_STATUS = 'approved';
 
 type JsonBatchDocument = {
   batchId: string;
@@ -40,7 +40,7 @@ export class JsonBatchRepository implements IBatchRepository {
       filename: payload.filename,
       batchName: payload.batchName,
       savedAt: new Date().toISOString(),
-      status: 'CALCULATED',
+      status: 'calculated',
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
       mapperErrors: payload.mapperErrors,

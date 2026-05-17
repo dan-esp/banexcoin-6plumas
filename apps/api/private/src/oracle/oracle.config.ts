@@ -31,4 +31,8 @@ export const getOracleConfig = (): OracleConfig => ({
   ),
   minRate: parseNumberEnv(ORACLE_ENV.MIN_RATE, ORACLE_DEFAULTS.MIN_RATE),
   maxRate: parseNumberEnv(ORACLE_ENV.MAX_RATE, ORACLE_DEFAULTS.MAX_RATE),
+  fallbackRate: parseNumberEnv(
+    ORACLE_ENV.FALLBACK_RATE,
+    ORACLE_DEFAULTS.FALLBACK_RATE,
+  ),
 });

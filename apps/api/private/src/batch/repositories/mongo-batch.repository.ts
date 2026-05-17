@@ -7,7 +7,7 @@ import type {
   BatchApprovalSnapshot,
   BatchExportMetadata,
   BatchExportRecord,
-  BatchSavePayload,
+  BatchSavePayload
 } from '../interfaces/batch-repository.interface.js';
 import { Batch, BatchDocument } from '../schemas/batch.schema.js';
 import {
@@ -18,9 +18,35 @@ import {
   CashbackResult,
   CashbackResultDocument,
 } from '../schemas/cashback-result.schema.js';
+import { BATCH_STATUS } from '../../oracle/oracle.constants.js';
 
-const APPROVED_STATUS = 'APPROVED';
-const EXPORTED_STATUS = 'EXPORTED';
+const APPROVED_STATUS = BATCH_STATUS.APPROVED;
+const EXPORTED_STATUS = BATCH_STATUS.EXPORTED;
+
+function toBatchOracleDocument(
+  ctx: BatchSavePayload['oracleContext'],
+): Batch['oracle'] {
+  let fetchedAtIso: string;
+  if (ctx.fetchedAt instanceof Date) {
+    fetchedAtIso = ctx.fetchedAt.toISOString();
+  } else if (typeof ctx.fetchedAt === 'string') {
+    fetchedAtIso = ctx.fetchedAt;
+  } else {
+    fetchedAtIso = new Date().toISOString();
+  }
+
+  return {
+    rate: ctx.rate ?? 0,
+    source: ctx.source ?? '',
+    fetchedAt: fetchedAtIso,
+    mode: ctx.mode,
+    status: ctx.status,
+    usedFallback: ctx.usedFallback,
+    ...(ctx.fallbackReason !== undefined
+      ? { fallbackReason: ctx.fallbackReason }
+      : {}),
+  };
+}
 
 @Injectable()
 export class MongoBatchRepository implements IBatchRepository {
@@ -41,14 +67,11 @@ export class MongoBatchRepository implements IBatchRepository {
       filename: payload.filename,
       batchName: payload.batchName,
       savedAt,
-      status: 'CALCULATED',
+      status: 'calculated',
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
-      mapperErrors: payload.mapperErrors as unknown as Record<
-        string,
-        unknown
-      >[],
-      oracle: payload.oracleContext,
+      mapperErrors: payload.mapperErrors as unknown as Record<string, unknown>[],
+      oracle: toBatchOracleDocument(payload.oracleContext),
     });
 
     if (payload.rows.length > 0) {
@@ -87,9 +110,13 @@ export class MongoBatchRepository implements IBatchRepository {
       return null;
     }
 
+    if (!batch.batchId) {
+      return null;
+    }
+
     return {
       batchId: batch.batchId,
-      batchName: batch.batchName,
+      batchName: batch.batchName ?? '',
       status: batch.status,
       report: {
         period: result.batchName,

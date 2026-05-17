@@ -33,10 +33,9 @@ export function parsePagination(query: {
   }
 }
 
-export function requireObjectId(value: string, name: string) {
-  if (!/^[a-f\d]{24}$/i.test(value)) {
-    throw badRequest(`${name} must be a Mongo ObjectId`)
+export function requireId(value: string, name: string) {
+  if (!value || value.trim().length === 0) {
+    throw badRequest(`${name} is required`)
   }
-
-  return value
+  return value.trim()
 }

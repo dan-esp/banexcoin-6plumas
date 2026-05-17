@@ -16,7 +16,7 @@ import { useApiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 import type { PublicAnomalyDto } from "../data";
-import { formatBs, formatUsdt } from "../lib";
+import { consoleSoftSurface, consoleSurface, formatBs, formatUsdt } from "../lib";
 
 function formatScore(score: number) {
   return score.toFixed(4);
@@ -92,19 +92,19 @@ export function AnomaliesPanel({
 
   return (
     <Card
-      className="border-[var(--warning-orange)]/30 bg-white/[0.06] text-white"
+      className={cn(consoleSurface, "border-[var(--warning-orange)]/40")}
       id="anomalies"
     >
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 place-items-center rounded-full bg-[var(--warning-orange)]/15 text-[var(--warning-orange)]">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--warning-orange)]/15 text-[var(--warning-orange)]">
             <AlertTriangle className="size-5" />
           </span>
           <div>
-            <CardTitle className="text-white">
+            <CardTitle className="text-foreground">
               AI-detected anomalies — needs attention
             </CardTitle>
-            <CardDescription className="text-white/52">
+            <CardDescription className="text-muted-foreground">
               Transactions flagged by the ML anomaly model for human review
               before payout approval.
             </CardDescription>
@@ -145,7 +145,8 @@ export function AnomaliesPanel({
             return (
               <div
                 className={cn(
-                  "grid gap-4 rounded-3xl border border-white/10 bg-black/24 p-5",
+                  consoleSoftSurface,
+                  "grid gap-4 rounded-3xl border p-5",
                   "lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center",
                 )}
                 key={anomaly.anomalyId}
@@ -160,29 +161,29 @@ export function AnomaliesPanel({
                       acct #{anomaly.transaction.accountId}
                     </Badge>
                   </div>
-                  <p className="font-bold text-lg text-white">
+                  <p className="font-bold text-foreground text-lg">
                     {anomaly.transaction.username}
                   </p>
-                  <div className="grid gap-1 text-sm text-white/64 sm:grid-cols-2">
+                  <div className="grid gap-1 text-foreground/80 text-sm sm:grid-cols-2">
                     <p>
-                      <span className="text-white/40">Amount:</span>{" "}
+                      <span className="text-muted-foreground">Amount:</span>{" "}
                       {formatBs(anomaly.transaction.amounts.bs)} ·{" "}
                       {formatUsdt(anomaly.transaction.amounts.usdt)}
                     </p>
                     <p>
-                      <span className="text-white/40">FX rate:</span>{" "}
+                      <span className="text-muted-foreground">FX rate:</span>{" "}
                       {anomaly.transaction.amounts.fxRate.toFixed(3)}
                     </p>
                     <p>
-                      <span className="text-white/40">Tx date:</span>{" "}
+                      <span className="text-muted-foreground">Tx date:</span>{" "}
                       {shortDate(anomaly.transaction.createdAt)}
                     </p>
                     <p>
-                      <span className="text-white/40">Detected:</span>{" "}
+                      <span className="text-muted-foreground">Detected:</span>{" "}
                       {shortDate(anomaly.detection.detectedAt)}
                     </p>
                   </div>
-                  <p className="break-all text-white/40 text-xs">
+                  <p className="break-all text-muted-foreground text-xs">
                     tx {anomaly.transaction.transactionId} · quote{" "}
                     {anomaly.transaction.quoteId}
                   </p>
@@ -190,7 +191,6 @@ export function AnomaliesPanel({
 
                 <div className="flex flex-wrap gap-2 lg:flex-col lg:items-stretch">
                   <Button
-                    className="border-white/12 bg-white/[0.06] text-white hover:bg-white/10"
                     disabled={isPending}
                     onClick={() => dismiss(anomaly)}
                     type="button"

@@ -37,7 +37,7 @@ export class BatchExportService {
 
     return {
       batchId,
-      status: 'EXPORTED',
+      status: 'exported',
       export: result.metadata,
     };
   }
