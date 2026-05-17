@@ -3,6 +3,8 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "prisma:generate": "prisma generate",
+    "migrate": "prisma db push --accept-data-loss",
+    "migrate:deploy": "bun run migrate",
     "postinstall": "bun run prisma:generate"
   },
   "dependencies": {

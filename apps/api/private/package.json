@@ -10,6 +10,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "migrate": "node -e \"console.log('No private API database migrations configured yet')\"",
+    "migrate:deploy": "npm run migrate --if-present",
     "lint": "eslint \"src/**/*.ts\" --fix"
   },
   "dependencies": {
