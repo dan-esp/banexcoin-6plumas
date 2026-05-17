@@ -1,0 +1,109 @@
+{
+  "batchId": "4f079aa8-df48-414e-868c-439be1c46057",
+  "filename": "test_03_BAD_duplicate_cotizacion_ids.csv",
+  "batchName": "mayo de 2026",
+  "savedAt": "2026-05-17T08:58:10.908Z",
+  "status": "CALCULATED",
+  "rowsLoaded": 3,
+  "skipped": 3,
+  "mapperErrors": [],
+  "oracle": {
+    "rate": 13.5,
+    "source": "fixed-fallback",
+    "fetchedAt": "2026-05-17T08:58:10.900Z",
+    "mode": "manual",
+    "status": "valid",
+    "usedFallback": true,
+    "fallbackReason": "Payout oracle provider URL is not configured"
+  },
+  "rows": [
+    {
+      "quoteId": 200,
+      "createdAt": "2025-05-02T13:00:00.000Z",
+      "status": "Completed",
+      "side": "Sell",
+      "username": "PedroAlvarez550001",
+      "accountId": 30001,
+      "amountUsdt": 22.71,
+      "amountBob": 300,
+      "currency": "BOB",
+      "fxRate": 13.21,
+      "commission": 0.34,
+      "updatedAt": "2025-05-02T13:00:30.000Z",
+      "transactionId": "7000000001",
+      "serviceType": "S-001",
+      "oms": "Banexcoin Bolivia"
+    },
+    {
+      "quoteId": 201,
+      "createdAt": "2025-05-02T14:00:00.000Z",
+      "status": "Completed",
+      "side": "Sell",
+      "username": "PedroAlvarez550001",
+      "accountId": 30001,
+      "amountUsdt": 11.35,
+      "amountBob": 150,
+      "currency": "BOB",
+      "fxRate": 13.21,
+      "commission": 0.17,
+      "updatedAt": "2025-05-02T14:00:20.000Z",
+      "transactionId": "7000000002",
+      "serviceType": "S-001",
+      "oms": "Banexcoin Bolivia"
+    },
+    {
+      "quoteId": 202,
+      "createdAt": "2025-05-02T15:00:00.000Z",
+      "status": "Completed",
+      "side": "Sell",
+      "username": "SofiaRuiz660002",
+      "accountId": 30002,
+      "amountUsdt": 5.68,
+      "amountBob": 75,
+      "currency": "BOB",
+      "fxRate": 13.21,
+      "commission": 0.09,
+      "updatedAt": "2025-05-02T15:00:15.000Z",
+      "transactionId": "7000000003",
+      "serviceType": "S-001",
+      "oms": "Banexcoin Bolivia"
+    }
+  ],
+  "report": {
+    "period": "mayo de 2026",
+    "calculatedAt": "2026-05-17T08:58:10.908Z",
+    "audit": {
+      "totalRowsFromStore": 3,
+      "rowsAfterTripleFilter": 3,
+      "rowsDiscardedByValidation": 0,
+      "duplicatesDropped": 0,
+      "rowsProcessed": 3,
+      "manualReviewTransactions": 0
+    },
+    "warnings": [],
+    "errors": [],
+    "totalUsersAnalyzed": 2,
+    "usersQualifyingForCashback": 1,
+    "usersNotQualifying": 1,
+    "results": [
+      {
+        "accountId": 30001,
+        "username": "PedroAlvarez550001",
+        "totalBob": 450,
+        "tierName": "Nivel 1",
+        "rate": 0.01,
+        "cashbackBob": 4.5,
+        "cashbackUsdt": 0.333333,
+        "transactionCount": 2,
+        "manualReviewTransactions": 0
+      }
+    ],
+    "banexTransferLines": [
+      {
+        "accountId": 30001,
+        "username": "PedroAlvarez550001",
+        "cashbackUsdt": 0.333333
+      }
+    ]
+  }
+}

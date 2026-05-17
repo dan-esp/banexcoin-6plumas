@@ -1,12 +1,19 @@
 {
   "name": "public",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "PORT=5000 bun run --hot src/index.ts",
+    "prisma:generate": "prisma generate",
+    "seed:local": "bun run prisma/seed-local.ts",
+    "postinstall": "bun run prisma:generate"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.9",
+    "@prisma/client": "6.9.0",
+    "@scalar/hono-api-reference": "^0.10.16",
     "hono": "^4.12.19"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "prisma": "6.9.0"
   }
 }

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="banexcoinGradient" x1="10" x2="54" y1="8" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#002C26" />
+      <stop offset="0.58" stop-color="#006E5E" />
+      <stop offset="1" stop-color="#ECA62A" />
+    </linearGradient>
+  </defs>
+  <rect width="52" height="52" x="6" y="6" rx="18" fill="url(#banexcoinGradient)" />
+  <rect width="48" height="48" x="8" y="8" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" />
+  <circle cx="32" cy="32" r="21" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="2.5" />
+  <path fill="#fff" d="M24 16h11.5c6.6 0 10.9 3.6 10.9 8.9 0 3.6-1.9 6.1-5.1 7.4 4.1 1 6.5 4.2 6.5 8.5 0 6.2-4.8 10.2-12 10.2H24V16Zm6.1 5.8v8H34c3.5 0 5.4-1.4 5.4-4s-1.8-4-5.1-4h-4.2Zm0 13.1v10.4h5c3.8 0 5.9-1.8 5.9-5 0-3.2-2.2-5-6.2-5h-4.7Z" />
+  <circle cx="47.5" cy="18.5" r="3.5" fill="#F7D36E" />
+</svg>

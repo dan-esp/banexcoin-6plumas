@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+type BatchOracle {
+  rate           Float
+  source         String
+  fetchedAt      String
+  mode           String
+  status         String
+  usedFallback   Boolean
+  fallbackReason String?
+}
+
+type BatchApproval {
+  approvedAt                 DateTime
+  approvedBy                 String
+  totalUsersAnalyzed         Int
+  usersQualifyingForCashback Int
+  totalCashbackUsdt          String
+}
+
+type BatchExportMetadata {
+  exportedAt            DateTime
+  exportedBy            String
+  exportFormat          String
+  exportChecksum        String
+  exportedAccountsCount Int
+  exportedTotalUsdt     String
+  exportReferencePrefix String
+  exportFilename        String
+}
+
+model Batch {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  batchId                String?      @unique
+  filename               String?
+  batchName              String?
+  savedAt                DateTime?
+  status                 String
+  rowsLoaded             Int?
+  skipped                Int?
+  mapperErrors           Json[]
+  oracle                 BatchOracle?
+  payoutOracleRate       Float?
+  payoutOracleSource     String?
+  payoutOracleFetchedAt  DateTime?
+  payoutOracleMode       String?
+  payoutOracleStatus     String?
+  payoutOracleReason     String?
+  payoutOracleOperatorId String?
+  payoutOracleLockedAt   DateTime?
+  approval               BatchApproval?
+  exportMetadata         BatchExportMetadata?
+  createdAt              DateTime?            @default(now())
+  updatedAt              DateTime?            @updatedAt
+
+  @@map("batches")
+}
+
+type CashbackAudit {
+  totalRowsFromStore        Int
+  rowsAfterTripleFilter     Int
+  rowsDiscardedByValidation Int
+  duplicatesDropped         Int
+  rowsProcessed             Int
+  manualReviewTransactions  Int
+}
+
+model CashbackResult {
+  id                         String         @id @default(auto()) @map("_id") @db.ObjectId
+  batchId                    String         @unique
+  batchName                  String
+  calculatedAt               DateTime
+  audit                      CashbackAudit?
+  warnings                   String[]
+  pipelineErrors             String[]
+  totalUsersAnalyzed         Int
+  usersQualifyingForCashback Int
+  usersNotQualifying         Int
+  results                    Json[]
+  banexTransferLines         Json[]
+
+  @@map("cashback_results")
+}
+
+model QrTransaction {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  batchId       String
+  quoteId       Int
+  createdAt     DateTime
+  status        String
+  side          String
+  username      String
+  accountId     Int
+  amountUsdt    Float
+  amountBob     Float
+  currency      String
+  fxRate        Float
+  commission    Float
+  updatedAt     DateTime
+  transactionId String
+  serviceType   String
+  oms           String
+
+  @@index([batchId])
+  @@map("qr_transactions")
+}
+
+model Anomaly {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  anomalyId     String    @unique
+  batchId       String?
+  quoteId       Int
+  transactionId String
+  accountId     Int
+  username      String
+  amountBob     Float
+  amountUsdt    Float
+  fxRate        Float
+  createdAt     DateTime
+  score         Float
+  isAnomaly     Boolean
+  status        String    @default("open")
+  detectedAt    DateTime
+  dismissedAt   DateTime?
+  dismissedBy   String?
+  dismissReason String?
+
+  @@index([batchId])
+  @@index([status])
+  @@map("anomalies")
+}

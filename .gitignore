@@ -1,5 +1,6 @@
 # ── Node / pnpm / bun ─────────────────────────────────────────────────────
 node_modules/
+.clerk/
 .pnp
 .pnp.*
 .yarn/*
@@ -13,6 +14,7 @@ node_modules/
 
 # ── Build outputs ─────────────────────────────────────────────────────────
 dist/
+dist.broken-*/
 build/
 out/
 .next/
@@ -33,7 +35,6 @@ __pycache__/
 .pytest_cache/
 
 # ── ML artefacts ──────────────────────────────────────────────────────────
-data/
 *.joblib
 
 # ── Docker / Compose volumes ──────────────────────────────────────────────
@@ -50,6 +51,8 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+!.env.prod.example
+
 
 # ── Editors / OS ──────────────────────────────────────────────────────────
 .DS_Store

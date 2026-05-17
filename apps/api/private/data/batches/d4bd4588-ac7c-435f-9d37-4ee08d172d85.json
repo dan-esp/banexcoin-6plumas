@@ -1,0 +1,82 @@
+{
+  "batchId": "d4bd4588-ac7c-435f-9d37-4ee08d172d85",
+  "filename": "test_03_BAD_duplicate_cotizacion_ids.csv",
+  "batchName": "April 2025",
+  "savedAt": "2026-05-17T02:52:28.955Z",
+  "status": "CALCULATED",
+  "rowsLoaded": 3,
+  "skipped": 3,
+  "mapperErrors": [],
+  "rows": [
+    {
+      "quoteId": 200,
+      "createdAt": "2025-05-02T13:00:00.000Z",
+      "status": "Completed",
+      "side": "Sell",
+      "username": "PedroAlvarez550001",
+      "accountId": 30001,
+      "amountUsdt": 22.71,
+      "amountBob": 300,
+      "currency": "BOB",
+      "fxRate": 13.21,
+      "commission": 0.34,
+      "updatedAt": "2025-05-02T13:00:30.000Z",
+      "transactionId": "7000000001",
+      "serviceType": "S-001",
+      "oms": "Banexcoin Bolivia"
+    },
+    {
+      "quoteId": 201,
+      "createdAt": "2025-05-02T14:00:00.000Z",
+      "status": "Completed",
+      "side": "Sell",
+      "username": "PedroAlvarez550001",
+      "accountId": 30001,
+      "amountUsdt": 11.35,
+      "amountBob": 150,
+      "currency": "BOB",
+      "fxRate": 13.21,
+      "commission": 0.17,
+      "updatedAt": "2025-05-02T14:00:20.000Z",
+      "transactionId": "7000000002",
+      "serviceType": "S-001",
+      "oms": "Banexcoin Bolivia"
+    },
+    {
+      "quoteId": 202,
+      "createdAt": "2025-05-02T15:00:00.000Z",
+      "status": "Completed",
+      "side": "Sell",
+      "username": "SofiaRuiz660002",
+      "accountId": 30002,
+      "amountUsdt": 5.68,
+      "amountBob": 75,
+      "currency": "BOB",
+      "fxRate": 13.21,
+      "commission": 0.09,
+      "updatedAt": "2025-05-02T15:00:15.000Z",
+      "transactionId": "7000000003",
+      "serviceType": "S-001",
+      "oms": "Banexcoin Bolivia"
+    }
+  ],
+  "report": {
+    "period": "April 2025",
+    "calculatedAt": "2026-05-17T02:52:28.955Z",
+    "audit": {
+      "totalRowsFromStore": 3,
+      "rowsAfterTripleFilter": 3,
+      "rowsDiscardedByValidation": 0,
+      "duplicatesDropped": 0,
+      "rowsProcessed": 3,
+      "manualReviewTransactions": 0
+    },
+    "warnings": [],
+    "errors": [],
+    "totalUsersAnalyzed": 2,
+    "usersQualifyingForCashback": 0,
+    "usersNotQualifying": 2,
+    "results": [],
+    "banexTransferLines": []
+  }
+}
