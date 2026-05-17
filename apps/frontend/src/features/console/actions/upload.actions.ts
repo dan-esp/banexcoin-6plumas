@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 
 import type {
+  BatchProcessResult,
   ProcessActionState,
   ProcessingReportDto,
   ValidationActionState,
@@ -195,11 +196,12 @@ export async function processBatchAction(
       return { status: "error", error: message };
     }
 
-    const result = (await res.json()) as { batchId: string; batchName: string };
+    const result = (await res.json()) as BatchProcessResult;
     return {
       status: "success",
       batchId: result.batchId,
       period: result.batchName,
+      result,
     };
   } catch (err) {
     return {

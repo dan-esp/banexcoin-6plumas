@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Batch } from '../batches/schemas/batch.schema';
 import {
@@ -22,10 +23,12 @@ import { OracleValidator } from './oracle.validator';
 import { BatchOracleRepository } from './repositories/batch-oracle.repository';
 import { HttpJsonOracleProvider } from './strategies/http-json-oracle.provider';
 import { ManualOracleProvider } from './strategies/manual-oracle.provider';
-import { OracleRateContext } from './oracle.types';
+import { BatchOracleResult, OracleRateContext } from './oracle.types';
 
 @Injectable()
 export class OracleService {
+  private readonly logger = new Logger(OracleService.name);
+
   constructor(
     private readonly batchOracleRepository: BatchOracleRepository,
     private readonly httpJsonOracleProvider: HttpJsonOracleProvider,
@@ -95,6 +98,51 @@ export class OracleService {
   ): Promise<LockedOracleContextResponseDto> {
     const batch = await this.batchOracleRepository.findByIdOrThrow(batchId);
     return toLockedOracleContextResponseDto(this.toOracleContext(batch));
+  }
+
+  /**
+   * Resolves the FX rate for batch processing with a guaranteed non-throwing fallback chain:
+   *   1. manualOverride (if provided and > 0) — skips live fetch entirely
+   *   2. Live oracle via PAYOUT_ORACLE_PROVIDER_URL
+   *   3. ORACLE_FALLBACK_RATE env var (default 13.5) — used when live fetch fails
+   */
+  async resolveRateForBatch(manualOverride?: number): Promise<BatchOracleResult> {
+    if (manualOverride !== undefined && manualOverride > 0) {
+      this.logger.log(`Using manual override rate: ${manualOverride} BOB/USDT`);
+      return {
+        rate: manualOverride,
+        source: 'manual-override',
+        fetchedAt: new Date(),
+        mode: ORACLE_MODE.MANUAL,
+        status: ORACLE_STATUS.VALID,
+        usedFallback: false,
+      };
+    }
+
+    try {
+      const ctx = await this.getValidLiveContext();
+      return {
+        rate: ctx.rate!,
+        source: ctx.source ?? 'unknown',
+        fetchedAt: ctx.fetchedAt ?? new Date(),
+        mode: ctx.mode,
+        status: ctx.status,
+        usedFallback: false,
+      };
+    } catch (err: unknown) {
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Oracle fetch failed (${reason}); falling back to ORACLE_FALLBACK_RATE`);
+      const { fallbackRate } = getOracleConfig();
+      return {
+        rate: fallbackRate,
+        source: 'fixed-fallback',
+        fetchedAt: new Date(),
+        mode: ORACLE_MODE.MANUAL,
+        status: ORACLE_STATUS.VALID,
+        usedFallback: true,
+        fallbackReason: reason,
+      };
+    }
   }
 
   private async getValidLiveContext(): Promise<OracleRateContext> {

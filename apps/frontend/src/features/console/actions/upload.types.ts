@@ -99,6 +99,45 @@ export type ProcessingReportDto = {
   results: UserCashbackResultDto[];
 };
 
+// ── Batch process result (POST /batches/process) ─────────────────────────────
+
+export type BatchOracleContext = {
+  rate: number;
+  source: string;
+  mode: "live" | "manual";
+  usedFallback: boolean;
+  fallbackReason?: string;
+};
+
+export type AnomalySummaryDto = {
+  scored: number;
+  anomalies: number;
+  skipped: boolean;
+  skipReason?: string;
+};
+
+export type BanexTransferLineDto = {
+  accountId: number;
+  username: string;
+  cashbackUsdt: number;
+};
+
+export type BatchProcessResult = {
+  batchId: string;
+  batchName: string;
+  calculatedAt: string;
+  oracle: BatchOracleContext;
+  audit: ProcessingAuditDto;
+  warnings: string[];
+  errors: string[];
+  totalUsersAnalyzed: number;
+  usersQualifyingForCashback: number;
+  usersNotQualifying: number;
+  results: UserCashbackResultDto[];
+  banexTransferLines: BanexTransferLineDto[];
+  anomalies: AnomalySummaryDto;
+};
+
 // ── Action states ─────────────────────────────────────────────────────────────
 
 export type ValidationActionState = {
@@ -111,5 +150,6 @@ export type ProcessActionState = {
   status: "idle" | "success" | "error";
   batchId?: string;
   period?: string;
+  result?: BatchProcessResult;
   error?: string;
 };

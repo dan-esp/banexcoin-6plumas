@@ -2,10 +2,14 @@
 
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   FileSpreadsheet,
   Loader2,
+  RefreshCw,
+  ShieldCheck,
   Upload,
+  Zap,
 } from "lucide-react";
 import { useActionState, useRef, useState, useTransition } from "react";
 
@@ -25,15 +29,17 @@ import {
   validateFileAction,
 } from "../actions/upload.actions";
 import type {
+  BatchProcessResult,
   ProcessActionState,
   ProcessingReportDto,
   ValidationActionState,
 } from "../actions/upload.types";
 import type { PublicBatchDto } from "../data";
-import { brandGradient } from "../lib";
+import { brandGradient, formatBs, formatCount, formatOracleRate, formatUsdt } from "../lib";
 
 const ACCEPTED_EXTENSIONS = [".csv", ".xlsx"];
 const MAX_FILE_SIZE_MB = 50;
+const RESULTS_PREVIEW_LIMIT = 8;
 
 const DEFAULT_TIERS = JSON.stringify(
   [
@@ -71,9 +77,259 @@ function clientValidateFile(file: File): string | null {
   return null;
 }
 
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+function StatPill({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string | number;
+  tone?: "neutral" | "success" | "warning" | "danger";
+}) {
+  const toneClass = {
+    neutral: "border-white/10 bg-white/[0.06]",
+    success: "border-[var(--success)]/20 bg-[var(--success)]/10",
+    warning: "border-[var(--warning-orange)]/20 bg-[var(--warning-orange)]/10",
+    danger: "border-[var(--blocked-red)]/20 bg-[var(--blocked-red)]/10",
+  }[tone];
+
+  return (
+    <div className={cn("rounded-2xl border px-4 py-3", toneClass)}>
+      <p className="font-semibold text-white/50 text-xs">{label}</p>
+      <p className="mt-1 font-bold text-lg text-white">{value}</p>
+    </div>
+  );
+}
+
+function BatchResultsView({ result }: { result: BatchProcessResult }) {
+  const qualifying = result.results
+    .filter((r) => r.cashbackUsdt > 0)
+    .sort((a, b) => b.cashbackUsdt - a.cashbackUsdt);
+
+  const preview = qualifying.slice(0, RESULTS_PREVIEW_LIMIT);
+  const remaining = qualifying.length - preview.length;
+
+  const totalCashbackUsdt = qualifying.reduce(
+    (sum, r) => sum + r.cashbackUsdt,
+    0,
+  );
+
+  const oracleIsLive = result.oracle.mode === "live";
+
+  return (
+    <div className="mt-4 grid gap-4">
+      {/* ── Oracle context ── */}
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-sm",
+          result.oracle.usedFallback
+            ? "border-[var(--warning-orange)]/30 bg-[var(--warning-orange)]/10"
+            : "border-white/10 bg-white/[0.04]",
+        )}
+      >
+        {oracleIsLive ? (
+          <Zap className="size-4 shrink-0 text-[var(--success)]" />
+        ) : (
+          <ShieldCheck className="size-4 shrink-0 text-[var(--warning-orange)]" />
+        )}
+        <span className="font-bold text-white">
+          {formatOracleRate(result.oracle.rate)}
+        </span>
+        <span className="text-white/50">·</span>
+        <span className="text-white/70">{result.oracle.source}</span>
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 font-semibold text-xs",
+            oracleIsLive
+              ? "bg-[var(--success)]/20 text-[var(--success)]"
+              : "bg-[var(--warning-orange)]/20 text-[var(--warning-orange)]",
+          )}
+        >
+          {oracleIsLive ? "live" : "manual"}
+        </span>
+        {result.oracle.usedFallback && (
+          <span className="text-white/50 text-xs">
+            (fallback — {result.oracle.fallbackReason})
+          </span>
+        )}
+      </div>
+
+      {/* ── KPI stats ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatPill
+          label="Users analyzed"
+          value={formatCount(result.totalUsersAnalyzed)}
+        />
+        <StatPill
+          label="Qualifying"
+          tone="success"
+          value={formatCount(result.usersQualifyingForCashback)}
+        />
+        <StatPill
+          label="Not qualifying"
+          value={formatCount(result.usersNotQualifying)}
+        />
+        <StatPill
+          label="Cashback liability"
+          tone="success"
+          value={formatUsdt(totalCashbackUsdt)}
+        />
+      </div>
+
+      {/* ── Anomalies pill ── */}
+      {!result.anomalies.skipped && result.anomalies.anomalies > 0 && (
+        <div className="flex items-center gap-2 rounded-xl border border-[var(--warning-orange)]/30 bg-[var(--warning-orange)]/10 px-4 py-2.5 text-sm text-white">
+          <AlertTriangle className="size-4 shrink-0 text-[var(--warning-orange)]" />
+          <span>
+            <span className="font-bold">{result.anomalies.anomalies}</span>{" "}
+            anomalous transaction
+            {result.anomalies.anomalies !== 1 ? "s" : ""} flagged out of{" "}
+            {result.anomalies.scored} scored — review the AI Anomalies panel.
+          </span>
+        </div>
+      )}
+
+      {/* ── Warnings ── */}
+      {result.warnings.length > 0 && (
+        <div className="grid gap-1.5">
+          {result.warnings.map((w, i) => (
+            <div
+              className="flex items-start gap-2 rounded-xl border border-[var(--warning-orange)]/20 bg-[var(--warning-orange)]/8 px-3 py-2 text-sm text-white/80"
+              // biome-ignore lint/suspicious/noArrayIndexKey: static list
+              key={i}
+            >
+              <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-[var(--warning-orange)]" />
+              {w}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Results table ── */}
+      {preview.length > 0 && (
+        <div>
+          <p className="mb-2 font-semibold text-white/50 text-xs">
+            Qualifying users — top {preview.length}
+            {remaining > 0 ? ` of ${qualifying.length}` : ""}
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-white/10 border-b bg-white/[0.04]">
+                  {[
+                    "Account",
+                    "Username",
+                    "Tier",
+                    "Total BOB",
+                    "Rate",
+                    "Cashback USDT",
+                    "Txns",
+                  ].map((h) => (
+                    <th
+                      className="px-3 py-2 text-left font-semibold text-white/45 text-xs"
+                      key={h}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {preview.map((row, i) => (
+                  <tr
+                    className={cn(
+                      "border-white/[0.06] transition-colors hover:bg-white/[0.04]",
+                      i < preview.length - 1 && "border-b",
+                    )}
+                    key={row.accountId}
+                  >
+                    <td className="px-3 py-2 font-mono text-white/70 text-xs">
+                      {row.accountId}
+                    </td>
+                    <td className="max-w-[140px] truncate px-3 py-2 font-semibold text-white">
+                      {row.username}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="rounded-full bg-white/[0.08] px-2 py-0.5 font-semibold text-white/70 text-xs">
+                        {row.tierName}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-white/80">
+                      {formatBs(row.totalBob)}
+                    </td>
+                    <td className="px-3 py-2 text-white/60">
+                      {(row.rate * 100).toFixed(1)}%
+                    </td>
+                    <td className="px-3 py-2 font-semibold text-[var(--success)]">
+                      {formatUsdt(row.cashbackUsdt)}
+                    </td>
+                    <td className="px-3 py-2 text-white/50">
+                      {row.transactionCount}
+                      {row.manualReviewTransactions > 0 && (
+                        <span className="ml-1 text-[var(--warning-orange)]">
+                          ⚑{row.manualReviewTransactions}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {remaining > 0 && (
+              <p className="px-3 py-2.5 text-center text-white/40 text-xs">
+                +{remaining} more row{remaining !== 1 ? "s" : ""} — available
+                in the Export center
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Audit footer ── */}
+      <div className="flex flex-wrap gap-4 rounded-xl border border-white/[0.06] bg-black/10 px-4 py-3 text-xs text-white/40">
+        <span>
+          <span className="font-semibold text-white/60">
+            {result.audit.rowsProcessed}
+          </span>{" "}
+          rows processed
+        </span>
+        <span>·</span>
+        <span>
+          <span className="font-semibold text-white/60">
+            {result.audit.duplicatesDropped}
+          </span>{" "}
+          duplicates dropped
+        </span>
+        <span>·</span>
+        <span>
+          <span className="font-semibold text-white/60">
+            {result.audit.rowsDiscardedByValidation}
+          </span>{" "}
+          discarded by validation
+        </span>
+        {result.audit.manualReviewTransactions > 0 && (
+          <>
+            <span>·</span>
+            <span className="text-[var(--warning-orange)]">
+              <span className="font-semibold">
+                {result.audit.manualReviewTransactions}
+              </span>{" "}
+              flagged for manual review
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 type UploadPanelProps = {
   batch: PublicBatchDto;
-  onValidated: (report: ProcessingReportDto) => void;
+  onValidated: (report: ProcessingReportDto | null) => void;
   validationReport: ProcessingReportDto | null;
 };
 
@@ -86,8 +342,10 @@ export function UploadPanel({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [clientError, setClientError] = useState<string | null>(null);
 
-  // useTransition lets us call the server action directly with a manually
-  // constructed FormData, ensuring the File object is always included.
+  // Flips to true when a new file is picked; back to false after validation.
+  // Prevents processDone / ready from leaking across file selections.
+  const [localReset, setLocalReset] = useState(false);
+
   const [isValidating, startValidateTransition] = useTransition();
   const [validateState, setValidateState] =
     useState<ValidationActionState>(idleValidation);
@@ -97,17 +355,21 @@ export function UploadPanel({
     idleProcess,
   );
 
-  // File is ready to process once the preview calculation succeeds.
-  const ready = validationReport != null;
-  const processDone = processState.status === "success";
+  const ready = validationReport != null && !localReset;
+  const processDone = processState.status === "success" && !localReset;
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     setClientError(null);
+    setValidateState(idleValidation);
+
     if (!file) {
       setSelectedFile(null);
+      setLocalReset(false);
+      onValidated(null);
       return;
     }
+
     const err = clientValidateFile(file);
     if (err) {
       setClientError(err);
@@ -115,7 +377,10 @@ export function UploadPanel({
       e.target.value = "";
       return;
     }
+
     setSelectedFile(file);
+    setLocalReset(true);
+    onValidated(null);
   }
 
   function handleChooseFile() {
@@ -127,17 +392,20 @@ export function UploadPanel({
       setClientError("Please select a file first.");
       return;
     }
-    // Build FormData from React state so the File is always present on the server.
     const fd = new FormData();
     fd.append("file", selectedFile);
     startValidateTransition(async () => {
       const result = await validateFileAction(idleValidation, fd);
       setValidateState(result);
       if (result.status === "success" && result.report) {
+        setLocalReset(false);
         onValidated(result.report);
       }
     });
   }
+
+  const isRevalidating =
+    validationReport != null && localReset && selectedFile != null;
 
   return (
     <section
@@ -170,14 +438,24 @@ export function UploadPanel({
               type="button"
               onClick={handleChooseFile}
             >
-              <FileSpreadsheet className="size-10 text-[var(--warning-orange)]" />
+              <FileSpreadsheet
+                className={cn(
+                  "size-10",
+                  selectedFile && !localReset
+                    ? "text-[var(--success)]"
+                    : "text-[var(--warning-orange)]",
+                )}
+              />
               {selectedFile ? (
                 <>
                   <p className="mt-4 font-bold text-lg text-white">
                     {selectedFile.name}
                   </p>
                   <p className="mt-2 text-sm text-white/52">
-                    {(selectedFile.size / 1024).toFixed(0)} KB — click to change
+                    {(selectedFile.size / 1024).toFixed(0)} KB —{" "}
+                    {localReset
+                      ? "needs validation · click to change"
+                      : "validated · click to change"}
                   </p>
                 </>
               ) : (
@@ -209,6 +487,18 @@ export function UploadPanel({
               </div>
             )}
 
+            {/* Re-validate hint */}
+            {isRevalidating && (
+              <div className="mt-3 flex items-center gap-2 rounded-xl border border-[var(--warning-orange)]/30 bg-[var(--warning-orange)]/10 px-4 py-3 text-sm text-white">
+                <RefreshCw className="size-4 shrink-0 text-[var(--warning-orange)]" />
+                New file selected — click{" "}
+                <span className="mx-1 font-semibold">
+                  Re-validate &amp; preview
+                </span>{" "}
+                to continue.
+              </div>
+            )}
+
             {/* Validation passed banner */}
             {ready && (
               <div className="mt-3 flex items-center gap-2 rounded-xl border border-[var(--success)]/30 bg-[var(--success)]/10 px-4 py-3 text-sm text-white">
@@ -223,12 +513,12 @@ export function UploadPanel({
                 type="button"
                 onClick={handleChooseFile}
               >
-                <Upload />
-                Choose file
+                {selectedFile ? <RefreshCw /> : <Upload />}
+                {selectedFile ? "Change file" : "Choose file"}
               </Button>
               <Button
                 className="border-white/12 bg-white/[0.06] text-white hover:bg-white/10"
-                disabled={!selectedFile || isValidating || processDone}
+                disabled={!selectedFile || isValidating}
                 type="button"
                 variant="outline"
                 onClick={handleValidateSubmit}
@@ -238,15 +528,18 @@ export function UploadPanel({
                 ) : (
                   <CheckCircle2 />
                 )}
-                {isValidating ? "Calculating preview…" : "Validate & preview"}
+                {isValidating
+                  ? "Calculating preview…"
+                  : isRevalidating
+                    ? "Re-validate & preview"
+                    : "Validate & preview"}
               </Button>
             </div>
           </div>
 
-          {/* Step 2 — Batch config + process (only when preview succeeded) */}
+          {/* Step 2 — Batch config + process */}
           {ready && !processDone && (
             <form action={processAction} className="grid gap-4">
-              {/* Re-inject the file via DataTransfer so processAction receives it */}
               <input
                 className="hidden"
                 name="file"
@@ -375,22 +668,37 @@ export function UploadPanel({
             </form>
           )}
 
-          {/* Success state */}
-          {processDone && (
+          {/* Step 3 — Success + results visualization */}
+          {processDone && processState.result && (
             <div className="rounded-2xl border border-[var(--success)]/30 bg-[var(--success)]/10 px-5 py-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="size-6 text-[var(--success)]" />
-                <p className="font-bold text-white">Batch saved successfully</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="size-6 shrink-0 text-[var(--success)]" />
+                  <div>
+                    <p className="font-bold text-white">Batch saved</p>
+                    <p className="font-mono text-white/40 text-xs">
+                      {processState.batchId}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="hidden text-white/50 text-xs sm:inline">
+                    {processState.period}
+                  </span>
+                  <Button
+                    className="border-white/12 bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white"
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                    onClick={handleChooseFile}
+                  >
+                    <Upload className="size-3.5" />
+                    New batch
+                  </Button>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-white/60">
-                Period:{" "}
-                <span className="font-semibold text-white">
-                  {processState.period}
-                </span>
-              </p>
-              <p className="mt-1 font-mono text-sm text-white/40">
-                {processState.batchId}
-              </p>
+
+              <BatchResultsView result={processState.result} />
             </div>
           )}
         </CardContent>

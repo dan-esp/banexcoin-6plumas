@@ -1,22 +1,34 @@
-import { AlertTriangle, Database, LockKeyhole } from "lucide-react";
+import { AlertTriangle, Database, Info, LockKeyhole } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+import type { ConsoleNotice } from "../data";
 import { brandGradient } from "../lib";
 
-export function ErrorState({ message }: { message: string }) {
+const toneStyles = {
+  info: {
+    card: "border-[var(--info-blue)]/30 bg-[var(--info-blue)]/10",
+    icon: "text-[#b9adff]",
+    Icon: Info,
+  },
+  error: {
+    card: "border-[var(--warning-orange)]/30 bg-[var(--warning-orange)]/10",
+    icon: "text-[var(--warning-orange)]",
+    Icon: AlertTriangle,
+  },
+} as const;
+
+export function NoticeBanner({ notice }: { notice: NonNullable<ConsoleNotice> }) {
+  const style = toneStyles[notice.tone];
   return (
-    <Card className="border-[var(--warning-orange)]/30 bg-[var(--warning-orange)]/10 p-4 text-white">
+    <Card className={cn("p-4 text-white", style.card)}>
       <div className="flex gap-3">
-        <AlertTriangle className="mt-0.5 size-5 shrink-0 text-[var(--warning-orange)]" />
+        <style.Icon className={cn("mt-0.5 size-5 shrink-0", style.icon)} />
         <div>
-          <p className="font-bold">Public API unavailable</p>
-          <p className="mt-1 text-sm text-white/60">
-            {message}. Rendering stable fixture data so the console remains
-            reviewable.
-          </p>
+          <p className="font-bold">{notice.title}</p>
+          <p className="mt-1 text-sm text-white/60">{notice.message}</p>
         </div>
       </div>
     </Card>

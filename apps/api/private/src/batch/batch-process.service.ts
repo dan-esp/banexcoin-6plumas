@@ -6,7 +6,6 @@ import { EtlStore } from '../etl/store/etl-store.service.js';
 import { ProcessingService } from '../processing/processing.service.js';
 import { CalculateRequestDto } from '../processing/dto/calculate-request.dto.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
-import { ORACLE_STATUS, ORACLE_MODE } from '../oracle/oracle.constants.js';
 import { OracleService } from '../oracle/oracle.service.js';
 import { AnomalyService, AnomalySummary } from '../anomaly/anomaly.service.js';
 
@@ -62,18 +61,7 @@ export class BatchProcessService {
     dto: ProcessBatchDto,
     authToken?: string,
   ): Promise<ProcessBatchResult> {
-    // Resolve payout FX rate using the integrated Oracle service
-    const currentRateResponse = await this.oracleService.getCurrentRate();
-    
-    // Use manual override if provided, otherwise use current oracle rate
-    const rate = dto.outputFxRate ?? currentRateResponse.rate!;
-    const oracleCtx = {
-      rate,
-      source: dto.outputFxRate ? 'manual-override' : (currentRateResponse.source ?? 'oracle'),
-      mode: dto.outputFxRate ? ORACLE_MODE.MANUAL : ORACLE_MODE.LIVE,
-      usedFallback: currentRateResponse.status !== 'valid',
-      fallbackReason: dto.outputFxRate ? undefined : currentRateResponse.status,
-    };
+    const oracleCtx = await this.oracleService.resolveRateForBatch(dto.outputFxRate);
 
     const uploadResult = await this.etlService.processUpload(
       file,
@@ -103,9 +91,9 @@ export class BatchProcessService {
       oracleContext: {
         rate: oracleCtx.rate,
         source: oracleCtx.source,
-        fetchedAt: new Date(),
+        fetchedAt: oracleCtx.fetchedAt,
         mode: oracleCtx.mode,
-        status: dto.outputFxRate ? ORACLE_STATUS.VALID : currentRateResponse.status,
+        status: oracleCtx.status,
         usedFallback: oracleCtx.usedFallback,
         fallbackReason: oracleCtx.fallbackReason,
       },

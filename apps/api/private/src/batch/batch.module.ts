@@ -5,7 +5,9 @@ import { ProcessingModule } from '../processing/processing.module.js';
 import { OracleModule } from '../oracle/oracle.module.js';
 import { AnomalyModule } from '../anomaly/anomaly.module.js';
 import { BatchController } from './batch.controller.js';
+import { ExchangeRateController } from './exchange-rate.controller.js';
 import { BatchProcessService } from './batch-process.service.js';
+import { BatchOracleService } from './oracle.service.js';
 import { JsonBatchRepository } from './repositories/json-batch.repository.js';
 import { MongoBatchRepository } from './repositories/mongo-batch.repository.js';
 import { Batch, BatchSchema } from './schemas/batch.schema.js';
@@ -31,9 +33,10 @@ const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
         ]
       : []),
   ],
-  controllers: [BatchController],
+  controllers: [BatchController, ExchangeRateController],
   providers: [
     BatchProcessService,
+    BatchOracleService,
     {
       provide: 'BATCH_REPOSITORY',
       useClass: isMongoDb ? MongoBatchRepository : JsonBatchRepository,

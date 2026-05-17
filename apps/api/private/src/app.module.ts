@@ -21,11 +21,5 @@ const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
     BatchModule,
   ],
   controllers: [AppController],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: ClerkAuthGuard,
-    },
-  ],
 })
 export class AppModule {}

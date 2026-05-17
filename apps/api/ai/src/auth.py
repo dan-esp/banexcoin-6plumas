@@ -11,7 +11,15 @@ from starlette.responses import Response
 
 from .config import settings
 
-PUBLIC_PATHS = {"/health", "/docs", "/redoc", "/openapi.json"}
+PUBLIC_PATHS = {
+    "/health",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/model/info",
+    "/train",
+    "/train/upload",
+}
 
 
 def _parse_list(value: str | None) -> list[str]:

@@ -10,7 +10,7 @@ import { CalculationReview } from "./calculation-review";
 import { ExecutiveSummary } from "./executive-summary";
 import { ExportActionCard } from "./export-action-card";
 import { KpiCard } from "./kpi-card";
-import { ErrorState } from "./states";
+import { NoticeBanner } from "./states";
 import { TierDistribution } from "./tier-distribution";
 import { UploadFlow } from "./upload-flow";
 import { WorkflowStepper } from "./workflow-stepper";
@@ -21,11 +21,11 @@ export function ConsoleScreen({
   disbursements,
   anomalies,
   source,
-  error,
+  notice,
 }: ConsoleDataState) {
   return (
-    <AppShell batch={batch} dataSource={source} error={error}>
-      {error ? <ErrorState message={error} /> : null}
+    <AppShell batch={batch} dataSource={source} notice={notice}>
+      {notice ? <NoticeBanner notice={notice} /> : null}
       <BrandHeader batch={batch} />
 
       <section className="grid gap-4 xl:grid-cols-4">

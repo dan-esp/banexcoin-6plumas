@@ -4,6 +4,7 @@ export type {
   BatchStatus,
   ConsoleDataSource,
   ConsoleDataState,
+  ConsoleNotice,
   PublicAnomalyDto,
   PublicBatchDto,
   PublicDisbursementDto,
