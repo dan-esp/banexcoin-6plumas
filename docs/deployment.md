@@ -42,10 +42,12 @@ curl -fsS http://localhost:3000/                 # frontend
 Estas viajan como `ARG` al `Dockerfile` del frontend y quedan **incrustadas** en el JS público.
 **Nunca** pongas valores secretos aquí.
 
-| Variable                 | Para qué                                    | Ejemplo                          |
-| ------------------------ | ------------------------------------------- | -------------------------------- |
-| `NEXT_PUBLIC_API_URL`    | URL del public-api desde el browser         | `https://api.banexcoin.com.bo`   |
-| `NEXT_PUBLIC_AI_URL`     | URL del servicio AI desde el browser        | `https://ai.banexcoin.com.bo`    |
+| Variable                              | Para qué                                    | Ejemplo                                        |
+| ------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`                 | URL del public-api desde el browser         | `https://api.banexcoin.shop`                   |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`   | Clave pública de Clerk (auth)               | `pk_live_...`                                  |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`       | Path de sign-in de Clerk                    | `/sign-in`                                     |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL`       | Path de sign-up de Clerk                    | `/sign-up`                                     |
 
 ### 2.2 Runtime — `private-api` (NestJS)
 
@@ -96,13 +98,15 @@ Configurar en **Settings → Secrets and variables → Actions** del repositorio
 
 ### 3.1 Obligatorios para CI/CD
 
-| Secret                  | Usado en                | Para qué                                                              |
-| ----------------------- | ----------------------- | --------------------------------------------------------------------- |
-| `DOCKERHUB_USERNAME`    | `check_push`, `release` | Login a Docker Hub para build cache y push                            |
-| `DOCKERHUB_TOKEN`       | `check_push`, `release` | Personal Access Token con scope `read,write,delete`                   |
-| `NEXT_PUBLIC_API_URL`   | `release`               | `--build-arg` al Dockerfile del frontend                              |
-| `NEXT_PUBLIC_AI_URL`    | `release`               | `--build-arg` al Dockerfile del frontend                              |
-| `DOKPLOY_URL`           | `release`               | Base URL de tu instancia Dokploy (ej. `https://dokploy.example.com`)  |
+| Secret                                | Usado en                | Para qué                                                              |
+| ------------------------------------- | ----------------------- | --------------------------------------------------------------------- |
+| `DOCKERHUB_USERNAME`                  | `check_push`, `release` | Login a Docker Hub para build cache y push                            |
+| `DOCKERHUB_TOKEN`                     | `check_push`, `release` | Personal Access Token con scope `read,write,delete`                   |
+| `NEXT_PUBLIC_API_URL`                 | `release`               | `--build-arg` al Dockerfile del frontend                              |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`   | `release`               | `--build-arg` Clerk publishable key (bake en el bundle)               |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`       | `release`               | `--build-arg` path de sign-in                                         |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL`       | `release`               | `--build-arg` path de sign-up                                         |
+| `DOKPLOY_URL`                         | `release`               | Base URL de tu instancia Dokploy (ej. `https://dokploy.example.com`)  |
 
 > `GITHUB_TOKEN` lo provee Actions automáticamente — **no** configurarlo manualmente.
 

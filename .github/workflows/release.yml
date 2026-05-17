@@ -61,22 +61,22 @@ jobs:
             name: 'web-client'
             context: './apps/frontend'
             file: './apps/frontend/Dockerfile'
-            webhooks_prod: []
+            webhooks_prod: ['hXH8OPs9xRblA4kDT9_tx']
           - id: 'private'
             name: 'private-api'
             context: './apps/api/private'
             file: './apps/api/private/Dockerfile'
-            webhooks_prod: []
+            webhooks_prod: ['lurdr_iHo_gySB0D3S9XG']
           - id: 'public'
             name: 'public-api'
             context: './apps/api/public'
             file: './apps/api/public/Dockerfile'
-            webhooks_prod: []
+            webhooks_prod: ['ZUIfiW0fxNOBk-1w-qAi2']
           - id: 'ai'
             name: 'ai-api'
             context: './apps/api/ai'
             file: './apps/api/ai/Dockerfile'
-            webhooks_prod: []
+            webhooks_prod: ['3rWlwKxPbDu5zFQ9K38Lv']
 
     steps:
       - name: Check if service should run
@@ -111,7 +111,9 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_AI_URL=${{ secrets.NEXT_PUBLIC_AI_URL }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_CLERK_SIGN_IN_URL=${{ secrets.NEXT_PUBLIC_CLERK_SIGN_IN_URL }}
+            NEXT_PUBLIC_CLERK_SIGN_UP_URL=${{ secrets.NEXT_PUBLIC_CLERK_SIGN_UP_URL }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:stable
             ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:${{ needs.release.outputs.new_tag }}
