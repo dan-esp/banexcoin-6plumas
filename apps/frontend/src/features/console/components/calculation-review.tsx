@@ -1,4 +1,8 @@
+"use client";
+
 import { Download, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+import { approveBatchAction } from "../actions/batch-export";
 import type { PublicBatchDto, PublicResultDto } from "../data";
 import {
   brandGradient,
@@ -29,8 +34,29 @@ export function CalculationReview({
   batch: PublicBatchDto;
   results: PublicResultDto[];
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
   const canApprove =
     batch.validation.blockedRows === 0 && !batch.approval.approved;
+
+  function handleApprove() {
+    if (!canApprove || isPending) {
+      return;
+    }
+
+    setMessage(null);
+    startTransition(async () => {
+      const result = await approveBatchAction(batch.id);
+
+      if (result.status === "error") {
+        setMessage(result.message);
+        return;
+      }
+
+      router.refresh();
+    });
+  }
 
   return (
     <Card className={consoleSurface} id="calculations">
@@ -47,10 +73,11 @@ export function CalculationReview({
             <Badge tone="warning">Incluye advertencias</Badge>
             <Button
               className={cn(canApprove && brandGradient)}
-              disabled={!canApprove}
+              disabled={!canApprove || isPending}
+              onClick={handleApprove}
             >
               <ShieldCheck />
-              Aprobar lote
+              {isPending ? "Aprobando" : "Aprobar lote"}
             </Button>
             <Button
               className={cn("hover:bg-[var(--brand-soft)]", consoleSoftSurface)}
@@ -99,6 +126,11 @@ export function CalculationReview({
             </p>
           </div>
         </div>
+        {message ? (
+          <div className="mb-5 rounded-xl border border-[var(--blocked-red)]/30 bg-[var(--blocked-red)]/10 p-3 text-sm text-[var(--blocked-red)]">
+            {message}
+          </div>
+        ) : null}
         <ResultsTable results={results} />
         <div className={cn("mt-5 rounded-3xl p-4", consoleSoftSurface)}>
           <p className="font-bold text-foreground">Traza de fórmula</p>

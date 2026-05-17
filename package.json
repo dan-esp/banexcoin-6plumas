@@ -11,6 +11,7 @@
     "dev:private": "pnpm -F=private start:dev",
     "dev:public": "bun run --cwd ./apps/api/public dev",
     "dev:ai": "uv --directory apps/api/ai run uvicorn src.main:app --reload --port 8081",
+    "seed:local": "bun run --cwd ./apps/api/public seed:local",
     "build": "pnpm --parallel build",
     "lint": "pnpm --parallel lint",
     "format": "pnpm --parallel format",

@@ -1,4 +1,8 @@
+"use client";
+
 import { CheckCircle2, Download, LockKeyhole } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+import { prepareBanexTransferExportAction } from "../actions/batch-export";
 import type { PublicBatchDto, PublicDisbursementDto } from "../data";
 import {
   brandGradient,
@@ -49,6 +54,9 @@ export function ExportActionCard({
   batch: PublicBatchDto;
   disbursements: PublicDisbursementDto[];
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
   const gates = [
     { label: "Validación limpia", done: batch.validation.blockedRows === 0 },
     { label: "Oráculo bloqueado", done: Boolean(batch.payoutOracle.rate) },
@@ -56,6 +64,25 @@ export function ExportActionCard({
     { label: "Exportación habilitada", done: batch.export.ready },
   ];
   const firstDisbursement = disbursements.at(0);
+
+  function handleBanexTransferExport() {
+    if (!batch.export.ready || isPending) {
+      return;
+    }
+
+    setMessage(null);
+    startTransition(async () => {
+      const result = await prepareBanexTransferExportAction(batch.id);
+
+      if (result.status === "error") {
+        setMessage(result.message);
+        return;
+      }
+
+      router.refresh();
+      window.location.href = `/api/batches/${batch.id}/export/banextransfer`;
+    });
+  }
 
   return (
     <Card className={consoleSurface} id="export">
@@ -93,6 +120,11 @@ export function ExportActionCard({
         {!batch.export.ready ? (
           <LockedActionNotice reason="Las filas bloqueadas y la aprobación de finanzas deben resolverse antes de generar la exportación." />
         ) : null}
+        {message ? (
+          <div className="rounded-xl border border-[var(--blocked-red)]/30 bg-[var(--blocked-red)]/10 p-3 text-sm text-[var(--blocked-red)]">
+            {message}
+          </div>
+        ) : null}
         {exportOptions.map((option) => (
           <div
             className={cn(
@@ -116,11 +148,12 @@ export function ExportActionCard({
                 !option.emphasis &&
                   "border-[var(--brand-border)] bg-[var(--brand-surface)] text-foreground hover:bg-[var(--brand-soft)]",
               )}
-              disabled={!batch.export.ready}
+              disabled={!batch.export.ready || isPending || !option.emphasis}
+              onClick={option.emphasis ? handleBanexTransferExport : undefined}
               variant={option.emphasis ? "default" : "outline"}
             >
               <Download />
-              Generar
+              {option.emphasis && isPending ? "Preparando" : "Generar"}
             </Button>
           </div>
         ))}

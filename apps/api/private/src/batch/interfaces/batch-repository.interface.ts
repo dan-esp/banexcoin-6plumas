@@ -14,6 +14,43 @@ export interface BatchSavePayload {
   oracleContext: OracleContext;
 }
 
+export interface BatchApprovalSnapshot {
+  approvedAt: Date;
+  approvedBy: string;
+  totalUsersAnalyzed: number;
+  usersQualifyingForCashback: number;
+  totalCashbackUsdt: string;
+}
+
+export interface BatchExportMetadata {
+  exportedAt: Date;
+  exportedBy: string;
+  exportFormat: 'banextransfer_csv';
+  exportChecksum: string;
+  exportedAccountsCount: number;
+  exportedTotalUsdt: string;
+  exportReferencePrefix: string;
+  exportFilename: string;
+}
+
+export interface BatchExportRecord {
+  batchId: string;
+  batchName: string;
+  status: string;
+  report: ProcessingReportDto;
+  approval?: BatchApprovalSnapshot;
+  exportMetadata?: BatchExportMetadata;
+}
+
 export interface IBatchRepository {
   save(payload: BatchSavePayload): Promise<string>;
+  findForExport(batchId: string): Promise<BatchExportRecord | null>;
+  approve(
+    batchId: string,
+    approval: BatchApprovalSnapshot,
+  ): Promise<BatchExportRecord>;
+  markExported(
+    batchId: string,
+    metadata: BatchExportMetadata,
+  ): Promise<BatchExportRecord>;
 }

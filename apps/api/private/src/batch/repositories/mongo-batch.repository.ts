@@ -4,18 +4,32 @@ import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   IBatchRepository,
+  BatchApprovalSnapshot,
+  BatchExportMetadata,
+  BatchExportRecord,
   BatchSavePayload,
 } from '../interfaces/batch-repository.interface.js';
 import { Batch, BatchDocument } from '../schemas/batch.schema.js';
-import { QrTransaction, QrTransactionDocument } from '../schemas/qr-transaction.schema.js';
-import { CashbackResult, CashbackResultDocument } from '../schemas/cashback-result.schema.js';
+import {
+  QrTransaction,
+  QrTransactionDocument,
+} from '../schemas/qr-transaction.schema.js';
+import {
+  CashbackResult,
+  CashbackResultDocument,
+} from '../schemas/cashback-result.schema.js';
+
+const APPROVED_STATUS = 'APPROVED';
+const EXPORTED_STATUS = 'EXPORTED';
 
 @Injectable()
 export class MongoBatchRepository implements IBatchRepository {
   constructor(
     @InjectModel(Batch.name) private readonly batchModel: Model<BatchDocument>,
-    @InjectModel(QrTransaction.name) private readonly txModel: Model<QrTransactionDocument>,
-    @InjectModel(CashbackResult.name) private readonly resultModel: Model<CashbackResultDocument>,
+    @InjectModel(QrTransaction.name)
+    private readonly txModel: Model<QrTransactionDocument>,
+    @InjectModel(CashbackResult.name)
+    private readonly resultModel: Model<CashbackResultDocument>,
   ) {}
 
   async save(payload: BatchSavePayload): Promise<string> {
@@ -30,7 +44,10 @@ export class MongoBatchRepository implements IBatchRepository {
       status: 'CALCULATED',
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
-      mapperErrors: payload.mapperErrors as unknown as Record<string, unknown>[],
+      mapperErrors: payload.mapperErrors as unknown as Record<
+        string,
+        unknown
+      >[],
       oracle: payload.oracleContext,
     });
 
@@ -51,9 +68,80 @@ export class MongoBatchRepository implements IBatchRepository {
       usersQualifyingForCashback: report.usersQualifyingForCashback,
       usersNotQualifying: report.usersNotQualifying,
       results: report.results as unknown as Record<string, unknown>[],
-      banexTransferLines: report.banexTransferLines as unknown as Record<string, unknown>[],
+      banexTransferLines: report.banexTransferLines as unknown as Record<
+        string,
+        unknown
+      >[],
     });
 
     return batchId;
+  }
+
+  async findForExport(batchId: string): Promise<BatchExportRecord | null> {
+    const [batch, result] = await Promise.all([
+      this.batchModel.findOne({ batchId }).lean().exec(),
+      this.resultModel.findOne({ batchId }).lean().exec(),
+    ]);
+
+    if (!batch || !result) {
+      return null;
+    }
+
+    return {
+      batchId: batch.batchId,
+      batchName: batch.batchName,
+      status: batch.status,
+      report: {
+        period: result.batchName,
+        calculatedAt: result.calculatedAt,
+        audit: result.audit,
+        warnings: result.warnings,
+        errors: result.pipelineErrors,
+        totalUsersAnalyzed: result.totalUsersAnalyzed,
+        usersQualifyingForCashback: result.usersQualifyingForCashback,
+        usersNotQualifying: result.usersNotQualifying,
+        results: result.results,
+        banexTransferLines: result.banexTransferLines,
+      } as unknown as BatchExportRecord['report'],
+      approval: batch.approval,
+      exportMetadata: batch.exportMetadata,
+    };
+  }
+
+  async approve(
+    batchId: string,
+    approval: BatchApprovalSnapshot,
+  ): Promise<BatchExportRecord> {
+    await this.batchModel
+      .updateOne({ batchId }, { $set: { status: APPROVED_STATUS, approval } })
+      .exec();
+
+    return this.findForExportOrThrow(batchId);
+  }
+
+  async markExported(
+    batchId: string,
+    metadata: BatchExportMetadata,
+  ): Promise<BatchExportRecord> {
+    await this.batchModel
+      .updateOne(
+        { batchId },
+        { $set: { status: EXPORTED_STATUS, exportMetadata: metadata } },
+      )
+      .exec();
+
+    return this.findForExportOrThrow(batchId);
+  }
+
+  private async findForExportOrThrow(
+    batchId: string,
+  ): Promise<BatchExportRecord> {
+    const batch = await this.findForExport(batchId);
+
+    if (!batch) {
+      throw new Error(`Batch ${batchId} not found`);
+    }
+
+    return batch;
   }
 }

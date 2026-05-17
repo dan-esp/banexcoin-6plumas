@@ -2,14 +2,18 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Req,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import type { RequestWithClerkAuth } from '../auth/clerk-auth.guard.js';
 import {
   ApiBearerAuth,
@@ -20,7 +24,12 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { BatchProcessService, ProcessBatchDto } from './batch-process.service.js';
+import {
+  BatchProcessService,
+  ProcessBatchDto,
+} from './batch-process.service.js';
+import { BatchApprovalService } from './export/batch-approval.service.js';
+import { BatchExportService } from './export/batch-export.service.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
 
 @ApiTags('batches')
@@ -28,14 +37,19 @@ import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
 @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
 @Controller('batches')
 export class BatchController {
-  constructor(private readonly batchProcessService: BatchProcessService) {}
+  constructor(
+    private readonly batchProcessService: BatchProcessService,
+    private readonly batchApprovalService: BatchApprovalService,
+    private readonly batchExportService: BatchExportService,
+  ) {}
 
   @Post('process')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Upload file, run full ETL + cashback pipeline, and persist results',
+    summary:
+      'Upload file, run full ETL + cashback pipeline, and persist results',
     description:
       'Accepts a CSV or Excel file (must contain the "Pago QR" sheet) along with cashback ' +
       'configuration. Automatically cleans data, removes duplicates, validates rows, ' +
@@ -47,22 +61,55 @@ export class BatchController {
       type: 'object',
       required: ['file', 'batchName', 'tiers', 'minimumBob'],
       properties: {
-        file: { type: 'string', format: 'binary', description: 'CSV or Excel with Pago QR sheet' },
-        batchName: { type: 'string', example: 'April 2025', description: 'Human-readable batch label' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'CSV or Excel with Pago QR sheet',
+        },
+        batchName: {
+          type: 'string',
+          example: 'April 2025',
+          description: 'Human-readable batch label',
+        },
         tiers: {
           type: 'string',
-          example: '[{"name":"Nivel 1","minBob":500,"maxBob":1500,"rate":0.01},{"name":"Nivel 2","minBob":1500,"maxBob":5000,"rate":0.015},{"name":"Nivel 3","minBob":5000,"maxBob":999999999,"rate":0.02}]',
+          example:
+            '[{"name":"Nivel 1","minBob":500,"maxBob":1500,"rate":0.01},{"name":"Nivel 2","minBob":1500,"maxBob":5000,"rate":0.015},{"name":"Nivel 3","minBob":5000,"maxBob":999999999,"rate":0.02}]',
           description: 'JSON array of cashback tier definitions',
         },
-        minimumBob: { type: 'number', example: 500, description: 'Minimum monthly BOB to qualify' },
-        outputFxRate: { type: 'number', example: 13.5, description: 'Optional: payout FX rate BOB/USDT (omit to use weighted average from transactions)' },
-        manualReviewThreshold: { type: 'number', example: 5000, description: 'Optional: BOB threshold for flagging high-value transactions (default 5000)' },
+        minimumBob: {
+          type: 'number',
+          example: 500,
+          description: 'Minimum monthly BOB to qualify',
+        },
+        outputFxRate: {
+          type: 'number',
+          example: 13.5,
+          description:
+            'Optional: payout FX rate BOB/USDT (omit to use weighted average from transactions)',
+        },
+        manualReviewThreshold: {
+          type: 'number',
+          example: 5000,
+          description:
+            'Optional: BOB threshold for flagging high-value transactions (default 5000)',
+        },
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Batch processed and saved. Returns batchId + full cashback report.' })
-  @ApiResponse({ status: 400, description: 'Invalid file, missing columns, or bad tier config.' })
-  @ApiResponse({ status: 422, description: 'No eligible rows found after filtering.' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Batch processed and saved. Returns batchId + full cashback report.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file, missing columns, or bad tier config.',
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'No eligible rows found after filtering.',
+  })
   async process(
     @UploadedFile() file: Express.Multer.File,
     @Body('batchName') batchName: string,
@@ -94,10 +141,14 @@ export class BatchController {
 
     const minimumBob = parseFloat(minimumBobRaw);
     if (isNaN(minimumBob) || minimumBob < 0) {
-      throw new BadRequestException('minimumBob must be a non-negative number.');
+      throw new BadRequestException(
+        'minimumBob must be a non-negative number.',
+      );
     }
 
-    const outputFxRate = outputFxRateRaw ? parseFloat(outputFxRateRaw) : undefined;
+    const outputFxRate = outputFxRateRaw
+      ? parseFloat(outputFxRateRaw)
+      : undefined;
     const manualReviewThreshold = manualReviewThresholdRaw
       ? parseFloat(manualReviewThresholdRaw)
       : undefined;
@@ -111,5 +162,75 @@ export class BatchController {
     };
 
     return this.batchProcessService.process(file, dto, req?.auth?.token);
+  }
+
+  @Post(':batchId/approve')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Approve a calculated batch for export',
+    description:
+      'Records the finance approval gate. Export generation remains blocked until this succeeds.',
+  })
+  @ApiResponse({ status: 200, description: 'Batch approval recorded.' })
+  @ApiResponse({ status: 404, description: 'Batch not found.' })
+  @ApiResponse({ status: 409, description: 'Batch is not ready for approval.' })
+  @ApiResponse({ status: 422, description: 'Batch has blocking issues.' })
+  approve(
+    @Param('batchId') batchId: string,
+    @Req() req?: RequestWithClerkAuth,
+  ) {
+    return this.batchApprovalService.approve(
+      batchId,
+      req?.auth?.userId ?? 'unknown',
+    );
+  }
+
+  @Post(':batchId/export')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({
+    summary: 'Prepare BanexTransfer CSV export metadata',
+    description:
+      'Validates export readiness and persists deterministic export metadata. The CSV can then be downloaded from the CSV endpoint.',
+  })
+  @ApiResponse({ status: 202, description: 'Export metadata prepared.' })
+  @ApiResponse({ status: 404, description: 'Batch not found.' })
+  @ApiResponse({ status: 409, description: 'Batch is not approved.' })
+  @ApiResponse({ status: 422, description: 'Batch has no exportable payouts.' })
+  prepareExport(
+    @Param('batchId') batchId: string,
+    @Req() req?: RequestWithClerkAuth,
+  ) {
+    return this.batchExportService.prepareExport(
+      batchId,
+      req?.auth?.userId ?? 'unknown',
+    );
+  }
+
+  @Get(':batchId/export/banextransfer.csv')
+  @ApiOperation({
+    summary: 'Download deterministic BanexTransfer payout CSV',
+    description:
+      'Generates a CSV from stored approved calculation results. The endpoint never recalculates payout amounts.',
+  })
+  @ApiResponse({ status: 200, description: 'BanexTransfer CSV file.' })
+  @ApiResponse({ status: 404, description: 'Batch not found.' })
+  @ApiResponse({ status: 409, description: 'Batch is not approved.' })
+  async downloadBanexTransferCsv(
+    @Param('batchId') batchId: string,
+    @Req() req: RequestWithClerkAuth,
+    @Res() res: Response,
+  ) {
+    const exportResult = await this.batchExportService.downloadCsv(
+      batchId,
+      req.auth?.userId ?? 'unknown',
+    );
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${exportResult.filename}"`,
+    );
+    res.setHeader('X-Export-Checksum', exportResult.checksum);
+    res.send(exportResult.csv);
   }
 }
