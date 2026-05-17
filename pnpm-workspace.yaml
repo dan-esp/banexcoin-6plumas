@@ -1,3 +1,8 @@
 packages:
   - ./apps/frontend
   - ./apps/api/private
+allowBuilds:
+  '@nestjs/core': true
+  '@scarf/scarf': true
+  msw: true
+  sharp: true

@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { EtlModule } from './etl/etl.module.js';
+import { ProcessingModule } from './processing/processing.module.js';
+import { BatchModule } from './batch/batch.module.js';
+import { DatabaseModule } from './database/database.module.js';
+
+const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI ?? 'mongodb://mongo:27017/banexcoin'),
+    EtlModule,
+    ProcessingModule,
+    ...(isMongoDb ? [DatabaseModule] : []),
+    BatchModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
