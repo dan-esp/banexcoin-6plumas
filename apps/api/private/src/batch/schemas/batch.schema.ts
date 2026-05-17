@@ -1,5 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import {
+  BATCH_STATUS,
+  ORACLE_MODE,
+  ORACLE_STATUS,
+} from '../../oracle/oracle.constants.js';
+import type {
+  OracleMode,
+  OracleStatus,
+} from '../../oracle/oracle.types.js';
 
 export type BatchDocument = HydratedDocument<Batch>;
 
@@ -11,34 +20,38 @@ export type BatchStatus =
   | 'approved'
   | 'exported';
 
-@Schema({ collection: 'batches', timestamps: false })
+@Schema({ collection: 'batches', timestamps: true })
 export class Batch {
-  @Prop({ required: true, unique: true, index: true })
-  batchId: string;
+  @Prop({ index: true, unique: true, sparse: true })
+  batchId?: string;
 
-  @Prop({ required: true })
-  filename: string;
+  @Prop()
+  filename?: string;
 
-  @Prop({ required: true })
-  batchName: string;
+  @Prop()
+  batchName?: string;
 
-  @Prop({ required: true })
-  savedAt: Date;
+  @Prop()
+  savedAt?: Date;
 
-  @Prop({ required: true })
+  @Prop({
+    default: BATCH_STATUS.UPLOADED,
+    enum: Object.values(BATCH_STATUS),
+    required: true,
+  })
   status: BatchStatus;
 
-  @Prop({ required: true })
-  rowsLoaded: number;
+  @Prop()
+  rowsLoaded?: number;
 
-  @Prop({ required: true })
-  skipped: number;
+  @Prop()
+  skipped?: number;
 
   @Prop({ type: [Object], default: [] })
-  mapperErrors: Record<string, unknown>[];
+  mapperErrors?: Record<string, unknown>[];
 
-  @Prop({ type: Object, required: true })
-  oracle: {
+  @Prop({ type: Object })
+  oracle?: {
     rate: number;
     source: string;
     fetchedAt: string;
@@ -47,6 +60,30 @@ export class Batch {
     usedFallback: boolean;
     fallbackReason?: string;
   };
+
+  @Prop()
+  payoutOracleRate?: number;
+
+  @Prop()
+  payoutOracleSource?: string;
+
+  @Prop()
+  payoutOracleFetchedAt?: Date;
+
+  @Prop({ enum: Object.values(ORACLE_MODE) })
+  payoutOracleMode?: OracleMode;
+
+  @Prop({ enum: Object.values(ORACLE_STATUS) })
+  payoutOracleStatus?: OracleStatus;
+
+  @Prop()
+  payoutOracleReason?: string;
+
+  @Prop()
+  payoutOracleOperatorId?: string;
+
+  @Prop()
+  payoutOracleLockedAt?: Date;
 }
 
 export const BatchSchema = SchemaFactory.createForClass(Batch);

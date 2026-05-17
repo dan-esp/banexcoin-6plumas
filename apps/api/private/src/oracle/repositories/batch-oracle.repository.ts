@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Batch, BatchDocument } from '../../batches/schemas/batch.schema';
+import { Batch, BatchDocument } from '../../batch/schemas/batch.schema.js';
 import type { BatchStatus, OracleRateContext } from '../oracle.types';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class BatchOracleRepository {
   ) {}
 
   async findByIdOrThrow(batchId: string): Promise<BatchDocument> {
-    const batch = await this.batchModel.findById(batchId).exec();
+    const batch = await this.batchModel.findOne({ batchId }).exec();
 
     if (!batch) {
       throw new NotFoundException('Batch not found');

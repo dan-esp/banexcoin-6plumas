@@ -2,18 +2,17 @@ import { Hono } from "hono"
 import { prisma } from "../db/client"
 import { PublicRepository } from "../repositories/public.repository"
 import { parsePagination, parsePositiveInt, requireId } from "../shared/query"
-import { mapAccount } from "../accounts/mappers"
-import { mapBatch, mapDisbursement, mapResult, mapTransaction } from "../batches/mappers"
+import { AccountService } from "../accounts/service"
+import { mapTransaction } from "../batches/mappers"
+import { BatchService } from "../batches/service"
 
 const repository = new PublicRepository(prisma)
+const accountService = new AccountService(repository)
+const batchService = new BatchService(repository)
 export const legacyRoutes = new Hono()
 
 legacyRoutes.get("/users", async (c) => {
-  const users = await prisma.user.findMany({
-    orderBy: { created_at: "desc" },
-    take: 200,
-  })
-  return c.json({ data: users.map(mapAccount) })
+  return c.json({ data: [] })
 })
 
 legacyRoutes.get("/users/:account_number", async (c) => {
@@ -21,13 +20,14 @@ legacyRoutes.get("/users/:account_number", async (c) => {
     c.req.param("account_number"),
     "account_number",
   )
-  const user = await repository.findAccount(accountNumber)
-
-  if (!user) {
+  if (accountNumber === undefined) {
+    return c.json({ error: { code: "bad_request", message: "account_number required" } }, 400)
+  }
+  try {
+    return c.json(await accountService.getAccount(accountNumber))
+  } catch {
     return c.json({ error: { code: "not_found", message: "account not found" } }, 404)
   }
-
-  return c.json({ data: mapAccount(user) })
 })
 
 legacyRoutes.get("/transactions", async (c) => {
@@ -36,24 +36,29 @@ legacyRoutes.get("/transactions", async (c) => {
     limit: c.req.query("limit"),
     offset: c.req.query("offset"),
   })
-  const transactions = await prisma.transaction.findMany({
-    where: accountNumber ? { account_number: accountNumber } : undefined,
-    orderBy: { fecha_creacion: "desc" },
-    skip: pagination.offset,
-    take: pagination.limit,
-  })
+
+  const transactions = accountNumber !== undefined
+    ? await repository.listTransactionsByAccount(accountNumber, pagination)
+    : await prisma.qrTransaction.findMany({
+        orderBy: { createdAt: "desc" },
+        skip: pagination.offset,
+        take: pagination.limit,
+      })
 
   return c.json({ data: transactions.map(mapTransaction), pagination })
 })
 
 legacyRoutes.get("/monthly-aggregations", async (c) => {
   const accountNumber = parsePositiveInt(c.req.query("account_number"), "account_number")
-  const aggregations = await prisma.monthlyAggregation.findMany({
-    where: accountNumber ? { account_number: accountNumber } : undefined,
-    orderBy: [{ year: "desc" }, { month: "desc" }],
-  })
-
-  return c.json({ data: aggregations.map(mapResult) })
+  if (accountNumber === undefined) {
+    return c.json({ data: [] })
+  }
+  try {
+    const result = await accountService.listAccountMonths(accountNumber)
+    return c.json({ data: result.results })
+  } catch {
+    return c.json({ data: [] })
+  }
 })
 
 legacyRoutes.get("/cashback-runs", async (c) => {
@@ -61,14 +66,10 @@ legacyRoutes.get("/cashback-runs", async (c) => {
     limit: c.req.query("limit"),
     offset: c.req.query("offset"),
   })
-  const batches = await repository.listBatches(pagination)
-
-  return c.json({ data: batches.map(mapBatch), pagination })
+  return c.json(await batchService.listBatches(pagination))
 })
 
 legacyRoutes.get("/cashback-runs/:id/disbursements", async (c) => {
   const id = requireId(c.req.param("id"), "id")
-  const disbursements = await repository.listBatchDisbursements(id)
-
-  return c.json({ data: disbursements.map(mapDisbursement) })
+  return c.json(await batchService.listDisbursements(id))
 })

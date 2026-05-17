@@ -4,7 +4,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { Batch } from '../batches/schemas/batch.schema';
+import { Batch } from '../batch/schemas/batch.schema.js';
 import {
   BATCH_STATUS,
   IMMUTABLE_ORACLE_BATCH_STATUSES,

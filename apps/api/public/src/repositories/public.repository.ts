@@ -1,31 +1,49 @@
-import type { PrismaClient } from "@prisma/client"
+import type { Prisma, PrismaClient } from "@prisma/client"
 import type { Pagination } from "../shared/query"
 
 export class PublicRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   listBatches(pagination: Pagination) {
-    return this.prisma.cashbackRun.findMany({
-      orderBy: { created_at: "desc" },
+    return this.prisma.batch.findMany({
+      where: { batchId: { not: null } },
+      orderBy: [{ savedAt: "desc" }, { createdAt: "desc" }],
       skip: pagination.offset,
       take: pagination.limit,
     })
   }
 
-  findBatchById(id: string) {
-    return this.prisma.cashbackRun.findUnique({ where: { id } })
+  findBatchByBatchId(batchId: string | null | undefined) {
+    if (!batchId) return Promise.resolve(null)
+    return this.prisma.batch.findUnique({ where: { batchId } })
   }
 
   findLatestBatch() {
-    return this.prisma.cashbackRun.findFirst({
-      orderBy: { created_at: "desc" },
+    return this.prisma.batch.findFirst({
+      where: { batchId: { not: null } },
+      orderBy: [{ savedAt: "desc" }, { createdAt: "desc" }],
     })
   }
 
-  listBatchTransactions(cashbackRunId: string, pagination: Pagination) {
-    return this.prisma.transaction.findMany({
-      where: { cashback_run_id: cashbackRunId },
-      orderBy: { fecha_creacion: "desc" },
+  findCashbackResultByBatchId(batchId: string | null | undefined) {
+    if (!batchId) return Promise.resolve(null)
+    return this.prisma.cashbackResult.findUnique({ where: { batchId } })
+  }
+
+  listBatchTransactions(batchId: string | null | undefined, pagination: Pagination) {
+    if (!batchId) return Promise.resolve([])
+    return this.prisma.qrTransaction.findMany({
+      where: { batchId },
+      orderBy: { createdAt: "desc" },
+      skip: pagination.offset,
+      take: pagination.limit,
+    })
+  }
+
+  listTransactionsByAccount(accountId: number, pagination: Pagination) {
+    return this.prisma.qrTransaction.findMany({
+      where: { accountId },
+      orderBy: { createdAt: "desc" },
       skip: pagination.offset,
       take: pagination.limit,
     })
@@ -39,45 +57,11 @@ export class PublicRepository {
     const start = new Date(Date.UTC(year, month - 1, 1))
     const end = new Date(Date.UTC(year, month, 1))
 
-    return this.prisma.transaction.findMany({
-      where: {
-        fecha_creacion: {
-          gte: start,
-          lt: end,
-        },
-      },
-      orderBy: { fecha_creacion: "desc" },
+    return this.prisma.qrTransaction.findMany({
+      where: { createdAt: { gte: start, lt: end } satisfies Prisma.DateTimeFilter },
+      orderBy: { createdAt: "desc" },
       skip: pagination.offset,
       take: pagination.limit,
-    })
-  }
-
-  listBatchResults(cashbackRunId: string, year: number, month: number) {
-    return this.prisma.monthlyAggregation.findMany({
-      where: {
-        OR: [{ cashback_run_id: cashbackRunId }, { year, month }],
-      },
-      orderBy: [{ cashback_usdt: "desc" }, { alias: "asc" }],
-    })
-  }
-
-  listBatchDisbursements(cashbackRunId: string) {
-    return this.prisma.disbursement.findMany({
-      where: { cashback_run_id: cashbackRunId },
-      orderBy: { alias: "asc" },
-    })
-  }
-
-  findAccount(accountNumber: number) {
-    return this.prisma.user.findUnique({
-      where: { account_number: accountNumber },
-    })
-  }
-
-  listAccountMonths(accountNumber: number) {
-    return this.prisma.monthlyAggregation.findMany({
-      where: { account_number: accountNumber },
-      orderBy: [{ year: "desc" }, { month: "desc" }],
     })
   }
 }

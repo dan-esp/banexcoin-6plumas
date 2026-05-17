@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Batch, BatchSchema } from '../batches/schemas/batch.schema';
+import { Batch, BatchSchema } from '../batch/schemas/batch.schema.js';
 import { OracleController } from './oracle.controller';
 import { OracleService } from './oracle.service';
 import { OracleValidator } from './oracle.validator';

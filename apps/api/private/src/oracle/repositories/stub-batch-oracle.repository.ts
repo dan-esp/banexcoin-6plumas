@@ -1,5 +1,5 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import type { BatchDocument } from '../../batches/schemas/batch.schema';
+import type { BatchDocument } from '../../batch/schemas/batch.schema.js';
 import type { BatchStatus, OracleRateContext } from '../oracle.types';
 
 /**

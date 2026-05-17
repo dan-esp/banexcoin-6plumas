@@ -1,132 +1,206 @@
 import type {
-  CashbackRun,
-  Disbursement,
-  MonthlyAggregation,
-  Transaction,
+  Batch,
+  CashbackResult,
+  QrTransaction,
 } from "@prisma/client"
 
 function toIso(value: Date | null | undefined) {
   return value ? value.toISOString() : null
 }
 
+function parsePeriod(batchName: string | null | undefined): { year: number; month: number; label: string } {
+  if (batchName) {
+    const match = batchName.match(/(\d{4})-(\d{1,2})/)
+    if (match) {
+      const year = Number(match[1])
+      const month = Number(match[2])
+      return { year, month, label: `${year}-${String(month).padStart(2, "0")}` }
+    }
+  }
+  const fallback = new Date()
+  return {
+    year: fallback.getUTCFullYear(),
+    month: fallback.getUTCMonth() + 1,
+    label: `${fallback.getUTCFullYear()}-${String(fallback.getUTCMonth() + 1).padStart(2, "0")}`,
+  }
+}
+
 function periodLabel(year: number, month: number) {
   return `${year}-${String(month).padStart(2, "0")}`
 }
 
-export function mapBatch(batch: CashbackRun) {
-  const blockedRows = batch.blocked_rows ?? 0
-  const warningRows = batch.warning_rows ?? 0
-  const approved = Boolean(batch.approved_at)
+type RawUserResult = {
+  accountId?: number
+  username?: string
+  totalBob?: number
+  tierName?: string
+  rate?: number
+  cashbackBob?: number
+  cashbackUsdt?: number
+  transactionCount?: number
+  manualReviewTransactions?: number
+}
+
+type RawBanexLine = {
+  accountId?: number
+  username?: string
+  cashbackUsdt?: number
+}
+
+export function mapBatch(batch: Batch, result?: CashbackResult | null) {
+  const period = parsePeriod(batch.batchName)
+
+  const blockedRows = result?.audit?.rowsDiscardedByValidation ?? 0
+  const warningRows = result?.warnings?.length ?? 0
+  const validRows = result?.audit?.rowsProcessed ?? batch.rowsLoaded ?? null
+
+  const totalUsers = result?.usersQualifyingForCashback ?? result?.totalUsersAnalyzed ?? 0
+  const transactions = batch.rowsLoaded ?? null
+
+  let consumptionBs: number | null = null
+  let cashbackBs: number | null = null
+  let cashbackUsdt = 0
+
+  for (const r of (result?.results ?? []) as RawUserResult[]) {
+    consumptionBs = (consumptionBs ?? 0) + (r.totalBob ?? 0)
+    cashbackBs = (cashbackBs ?? 0) + (r.cashbackBob ?? 0)
+    cashbackUsdt += r.cashbackUsdt ?? 0
+  }
+
+  const oracle = batch.oracle
+  const payoutOracleRate = batch.payoutOracleRate ?? oracle?.rate ?? null
+  const payoutOracleSource = batch.payoutOracleSource ?? oracle?.source ?? null
+  const payoutOracleFetchedAtIso = batch.payoutOracleFetchedAt
+    ? toIso(batch.payoutOracleFetchedAt)
+    : oracle?.fetchedAt ?? null
+  const payoutOracleMode = batch.payoutOracleMode ?? oracle?.mode ?? null
+  const payoutOracleStatus = batch.payoutOracleStatus ?? oracle?.status ?? null
+  const payoutOracleReason = batch.payoutOracleReason ?? oracle?.fallbackReason ?? null
+
+  const approved = Boolean(batch.approvedAt)
+  const consumptionUsdt = payoutOracleRate && consumptionBs !== null
+    ? Number((consumptionBs / payoutOracleRate).toFixed(6))
+    : null
 
   return {
-    id: batch.id,
-    period: {
-      year: batch.year,
-      month: batch.month,
-      label: periodLabel(batch.year, batch.month),
-    },
+    id: batch.batchId ?? batch.id,
+    period,
     status: batch.status,
     validation: {
-      status: batch.validation_status ?? "unknown",
-      validRows: batch.valid_rows ?? null,
+      status: result ? "ok" : "pending",
+      validRows,
       warningRows,
       blockedRows,
       exportBlocked: blockedRows > 0,
     },
     totals: {
-      users: batch.total_users,
-      transactions: batch.total_transactions ?? null,
-      consumptionBs: batch.total_consumption_bs ?? null,
-      consumptionUsdt: batch.total_consumption_usdt ?? null,
-      cashbackBs: batch.total_cashback_bs ?? null,
-      cashbackUsdt: batch.total_cashback_usdt,
+      users: totalUsers,
+      transactions,
+      consumptionBs,
+      consumptionUsdt,
+      cashbackBs,
+      cashbackUsdt,
     },
     payoutOracle: {
-      rate: batch.payout_oracle_rate ?? null,
-      source: batch.payout_oracle_source ?? null,
-      fetchedAt: toIso(batch.payout_oracle_fetched_at),
-      mode: batch.payout_oracle_mode ?? null,
-      status: batch.payout_oracle_status ?? null,
-      reason: batch.payout_oracle_reason ?? null,
+      rate: payoutOracleRate,
+      source: payoutOracleSource,
+      fetchedAt: payoutOracleFetchedAtIso,
+      mode: payoutOracleMode,
+      status: payoutOracleStatus,
+      reason: payoutOracleReason,
     },
     approval: {
       approved,
-      approvedBy: batch.approved_by ?? null,
-      approvedAt: toIso(batch.approved_at),
+      approvedBy: batch.approvedBy ?? null,
+      approvedAt: toIso(batch.approvedAt),
     },
     export: {
-      ready: Boolean(batch.export_ready) && approved && blockedRows === 0,
-      exportedAt: toIso(batch.exported_at),
+      ready: Boolean(batch.exportReady) && approved && blockedRows === 0,
+      exportedAt: toIso(batch.exportedAt),
     },
-    createdAt: batch.created_at.toISOString(),
-    updatedAt: toIso(batch.updated_at),
+    createdAt: (batch.createdAt ?? batch.savedAt ?? new Date()).toISOString(),
+    updatedAt: toIso(batch.updatedAt),
   }
 }
 
-export function mapTransaction(transaction: Transaction) {
+export function mapTransaction(transaction: QrTransaction) {
   return {
     id: transaction.id,
-    transactionId: transaction.transaction_id,
-    accountNumber: transaction.account_number,
-    alias: transaction.alias,
-    createdAt: transaction.fecha_creacion.toISOString(),
+    transactionId: transaction.transactionId,
+    accountNumber: transaction.accountId,
+    alias: transaction.username,
+    createdAt: transaction.createdAt.toISOString(),
     amounts: {
-      bs: transaction.monto_bs,
-      usdt: transaction.monto_usdt,
-      impliedRate: transaction.tipo_cambio,
-      fee: transaction.comision,
+      bs: transaction.amountBob,
+      usdt: transaction.amountUsdt,
+      impliedRate: transaction.fxRate,
+      fee: transaction.commission,
     },
     validation: {
-      status: transaction.validation_status ?? "valid",
-      message: transaction.validation_message ?? null,
+      status: transaction.status,
+      message: null,
     },
     anomaly: {
-      flagged: transaction.is_anomaly ?? false,
-      score: transaction.anomaly_score ?? null,
+      flagged: false,
+      score: null,
     },
   }
 }
 
-export function mapResult(result: MonthlyAggregation) {
+export function mapResult(
+  raw: RawUserResult,
+  context: { year: number; month: number; payoutOracleRate: number | null; calculatedAt: Date | null },
+) {
+  const consumedBs = raw.totalBob ?? 0
+  const consumedUsdt = context.payoutOracleRate && context.payoutOracleRate > 0
+    ? Number((consumedBs / context.payoutOracleRate).toFixed(6))
+    : 0
+
   return {
-    id: result.id,
-    accountNumber: result.account_number,
-    alias: result.alias,
+    id: `${raw.accountId ?? "unknown"}-${context.year}-${context.month}`,
+    accountNumber: raw.accountId ?? 0,
+    alias: raw.username ?? "",
     period: {
-      year: result.year,
-      month: result.month,
-      label: periodLabel(result.year, result.month),
+      year: context.year,
+      month: context.month,
+      label: periodLabel(context.year, context.month),
     },
     totals: {
-      consumedBs: result.total_bs,
-      consumedUsdt: result.total_usdt,
-      qrCount: result.tx_count,
-      historicalEffectiveRate: result.historical_effective_rate ?? null,
+      consumedBs,
+      consumedUsdt,
+      qrCount: raw.transactionCount ?? 0,
+      historicalEffectiveRate: null,
     },
     tier: {
-      name: result.tier,
-      cashbackRate: result.cashback_percentage ?? result.cashback_rate,
+      name: raw.tierName ?? "",
+      cashbackRate: raw.rate ?? 0,
     },
-    payoutOracleRate: result.payout_oracle_rate ?? null,
+    payoutOracleRate: context.payoutOracleRate,
     cashback: {
-      bs: result.cashback_bs,
-      usdt: result.cashback_usdt,
+      bs: raw.cashbackBob ?? 0,
+      usdt: raw.cashbackUsdt ?? 0,
     },
-    reviewState: result.review_state ?? "ready",
-    updatedAt: result.updated_at.toISOString(),
+    reviewState: (raw.manualReviewTransactions ?? 0) > 0 ? "review" : "ready",
+    updatedAt: (context.calculatedAt ?? new Date()).toISOString(),
   }
 }
 
-export function mapDisbursement(disbursement: Disbursement) {
+export function mapDisbursement(
+  raw: RawBanexLine,
+  fallback: { batchId: string; status: string; tier: string; createdAt: Date | null },
+) {
   return {
-    id: disbursement.id,
-    accountNumber: disbursement.account_number,
-    alias: disbursement.alias,
-    tier: disbursement.tier,
-    cashbackUsdt: disbursement.cashback_usdt,
-    status: disbursement.status,
-    exportReference: disbursement.export_reference ?? null,
-    generatedAt: toIso(disbursement.generated_at),
-    createdAt: disbursement.created_at.toISOString(),
+    id: `${fallback.batchId}-${raw.accountId ?? "unknown"}`,
+    accountNumber: raw.accountId ?? 0,
+    alias: raw.username ?? "",
+    tier: fallback.tier,
+    cashbackUsdt: raw.cashbackUsdt ?? 0,
+    status: fallback.status,
+    exportReference: null,
+    generatedAt: null,
+    createdAt: (fallback.createdAt ?? new Date()).toISOString(),
   }
 }
+
+export type RawUserResultRecord = RawUserResult
+export type RawBanexLineRecord = RawBanexLine

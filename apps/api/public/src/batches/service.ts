@@ -6,6 +6,8 @@ import {
   mapDisbursement,
   mapResult,
   mapTransaction,
+  type RawBanexLineRecord,
+  type RawUserResultRecord,
 } from "./mappers"
 
 export class BatchService {
@@ -13,41 +15,73 @@ export class BatchService {
 
   async listBatches(pagination: Pagination) {
     const batches = await this.repository.listBatches(pagination)
-    return { data: batches.map(mapBatch), pagination }
+    const enriched = await Promise.all(
+      batches.map(async (batch) => {
+        const result = await this.repository.findCashbackResultByBatchId(batch.batchId)
+        return mapBatch(batch, result)
+      }),
+    )
+    return { data: enriched, pagination }
   }
 
-  async getBatch(id: string) {
-    const batch = await this.repository.findBatchById(id)
+  async getBatch(batchId: string) {
+    const batch = await this.repository.findBatchByBatchId(batchId)
     if (!batch) throw notFound("batch not found")
 
-    return { data: mapBatch(batch) }
+    const result = await this.repository.findCashbackResultByBatchId(batchId)
+    return { data: mapBatch(batch, result) }
   }
 
-  async listTransactions(id: string, pagination: Pagination) {
-    const batch = await this.repository.findBatchById(id)
+  async listTransactions(batchId: string, pagination: Pagination) {
+    const batch = await this.repository.findBatchByBatchId(batchId)
     if (!batch) throw notFound("batch not found")
 
-    const transactions = await this.repository.listBatchTransactions(id, pagination)
-    const data = transactions.length
-      ? transactions
-      : await this.repository.listTransactionsByPeriod(batch.year, batch.month, pagination)
-
-    return { data: data.map(mapTransaction), pagination }
+    const transactions = await this.repository.listBatchTransactions(batchId, pagination)
+    return { data: transactions.map(mapTransaction), pagination }
   }
 
-  async listResults(id: string) {
-    const batch = await this.repository.findBatchById(id)
+  async listResults(batchId: string) {
+    const batch = await this.repository.findBatchByBatchId(batchId)
     if (!batch) throw notFound("batch not found")
 
-    const results = await this.repository.listBatchResults(id, batch.year, batch.month)
-    return { data: results.map(mapResult) }
+    const result = await this.repository.findCashbackResultByBatchId(batchId)
+    if (!result) return { data: [] }
+
+    const mapped = mapBatch(batch, result)
+    const context = {
+      year: mapped.period.year,
+      month: mapped.period.month,
+      payoutOracleRate: mapped.payoutOracle.rate,
+      calculatedAt: result.calculatedAt,
+    }
+
+    const raw = (result.results ?? []) as RawUserResultRecord[]
+    return { data: raw.map((r) => mapResult(r, context)) }
   }
 
-  async listDisbursements(id: string) {
-    const batch = await this.repository.findBatchById(id)
+  async listDisbursements(batchId: string) {
+    const batch = await this.repository.findBatchByBatchId(batchId)
     if (!batch) throw notFound("batch not found")
 
-    const disbursements = await this.repository.listBatchDisbursements(id)
-    return { data: disbursements.map(mapDisbursement) }
+    const result = await this.repository.findCashbackResultByBatchId(batchId)
+    if (!result) return { data: [] }
+
+    const lines = (result.banexTransferLines ?? []) as RawBanexLineRecord[]
+    const userResults = (result.results ?? []) as RawUserResultRecord[]
+    const tierByAccount = new Map<number, string>()
+    for (const r of userResults) {
+      if (r.accountId !== undefined) tierByAccount.set(r.accountId, r.tierName ?? "")
+    }
+
+    return {
+      data: lines.map((line) =>
+        mapDisbursement(line, {
+          batchId,
+          status: batch.exportedAt ? "exported" : "pending",
+          tier: line.accountId !== undefined ? tierByAccount.get(line.accountId) ?? "" : "",
+          createdAt: result.calculatedAt ?? batch.createdAt ?? batch.savedAt ?? null,
+        }),
+      ),
+    }
   }
 }
