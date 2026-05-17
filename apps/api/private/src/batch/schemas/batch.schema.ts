@@ -9,6 +9,15 @@ import type {
   OracleMode,
   OracleStatus,
 } from '../../oracle/oracle.types.js';
+import {
+  BATCH_STATUS,
+  ORACLE_MODE,
+  ORACLE_STATUS,
+} from '../../oracle/oracle.constants.js';
+import type {
+  OracleMode,
+  OracleStatus,
+} from '../../oracle/oracle.types.js';
 
 export type BatchDocument = HydratedDocument<Batch>;
 

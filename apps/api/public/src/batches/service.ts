@@ -8,6 +8,8 @@ import {
   mapTransaction,
   type RawBanexLineRecord,
   type RawUserResultRecord,
+  type RawBanexLineRecord,
+  type RawUserResultRecord,
 } from "./mappers"
 
 export class BatchService {
