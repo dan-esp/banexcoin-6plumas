@@ -62,6 +62,7 @@ export function ConsoleScreen({
       <OracleContextCard oracle={oracle} />
       <ValidationBanner batch={batch} />
       <AnomaliesPanel initialAnomalies={anomalies} />
+
       <CalculationReview batch={batch} results={results} />
       <section className="grid gap-4">
         <div>

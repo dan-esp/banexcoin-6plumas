@@ -21,6 +21,18 @@ export interface OracleConfig {
   freshnessMinutes: number;
   minRate: number;
   maxRate: number;
+  fallbackRate: number;
+}
+
+/** Resolved oracle result used by batch processing — rate is always a concrete number. */
+export interface BatchOracleResult {
+  rate: number;
+  source: string;
+  fetchedAt: Date;
+  mode: OracleMode;
+  status: OracleStatus;
+  usedFallback: boolean;
+  fallbackReason?: string;
 }
 
 export interface OracleRateContext {

@@ -1,14 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { getOracleConfig } from '../oracle/oracle.config.js';
+import { ORACLE_MODE, ORACLE_STATUS } from '../oracle/oracle.constants.js';
+import { readDotPath } from '../oracle/dot-path.js';
+import { parseOracleRate } from '../oracle/utils/oracle-parsers.js';
 
-export interface OracleResponse {
-  rate: number;
-  source: string;
-  fetchedAt: string;
-  mode: string;
-  status: string;
-}
-
-export interface OracleContext {
+export interface RealTimeRateResult {
   rate: number;
   source: string;
   fetchedAt: string;
@@ -18,81 +14,78 @@ export interface OracleContext {
   fallbackReason?: string;
 }
 
-const ORACLE_URL =
-  process.env.ORACLE_URL ?? 'http://localhost:4000/oracle/current';
-
-/** Fixed fallback rate used when the oracle is unreachable and no override is provided. */
-const ORACLE_FALLBACK_RATE = parseFloat(
-  process.env.ORACLE_FALLBACK_RATE ?? '13.5',
-);
-
+/**
+ * Lightweight service for real-time USDT/BOB rate lookups.
+ * Always resolves — never throws. Fallback chain:
+ *   1. PAYOUT_ORACLE_PROVIDER_URL (external HTTP feed)
+ *   2. ORACLE_FALLBACK_RATE env var (default 13.5)
+ */
 @Injectable()
-export class OracleService {
-  private readonly logger = new Logger(OracleService.name);
+export class BatchOracleService {
+  private readonly logger = new Logger(BatchOracleService.name);
 
-  /**
-   * Fetches the live USDT/BOB rate from the oracle endpoint.
-   *
-   * Fallback chain:
-   *   1. Live oracle → ORACLE_URL
-   *   2. manualOverride from request (outputFxRate field)
-   *   3. ORACLE_FALLBACK_RATE env var (default 13.5)
-   */
-  async resolveRate(manualOverride?: number): Promise<OracleContext> {
+  async getCurrentRate(): Promise<RealTimeRateResult> {
+    const config = getOracleConfig();
+
+    if (!config.providerUrl) {
+      this.logger.warn(
+        `PAYOUT_ORACLE_PROVIDER_URL not configured; using ORACLE_FALLBACK_RATE: ${config.fallbackRate}`,
+      );
+      return this.fallback(config.fallbackRate, 'PAYOUT_ORACLE_PROVIDER_URL is not configured');
+    }
+
     try {
-      const response = await fetch(ORACLE_URL, {
-        signal: AbortSignal.timeout(5000),
+      const response = await fetch(config.providerUrl, {
+        headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(5_000),
       });
 
       if (!response.ok) {
-        throw new Error(`Oracle responded with HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      const data = (await response.json()) as OracleResponse;
+      const raw = (await response.json()) as unknown;
+      const rate = parseOracleRate(readDotPath(raw, config.ratePath));
 
-      if (data.status !== 'valid' || typeof data.rate !== 'number' || data.rate <= 0) {
-        throw new Error(`Oracle returned invalid data: status=${data.status}, rate=${data.rate}`);
+      if (rate === undefined || !Number.isFinite(rate) || rate <= 0) {
+        throw new Error(`Invalid rate in response: ${JSON.stringify(rate)}`);
       }
 
-      this.logger.log(
-        `Oracle rate fetched: ${data.rate} BOB/USDT from ${data.source}`,
-      );
+      const sourceValue = config.sourcePath
+        ? readDotPath(raw, config.sourcePath)
+        : undefined;
+      const source =
+        typeof sourceValue === 'string' && sourceValue.trim()
+          ? sourceValue
+          : config.providerId;
 
+      this.logger.log(`Real-time rate: ${rate} BOB/USDT from ${source}`);
       return {
-        rate: data.rate,
-        source: data.source,
-        fetchedAt: data.fetchedAt,
-        mode: data.mode,
-        status: data.status,
+        rate,
+        source,
+        fetchedAt: new Date().toISOString(),
+        mode: ORACLE_MODE.LIVE,
+        status: ORACLE_STATUS.VALID,
         usedFallback: false,
       };
     } catch (err: unknown) {
       const reason = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Oracle fetch failed (${reason}). Applying fallback.`);
-
-      if (manualOverride !== undefined && manualOverride > 0) {
-        this.logger.log(`Using request-provided outputFxRate as fallback: ${manualOverride}`);
-        return {
-          rate: manualOverride,
-          source: 'manual-override',
-          fetchedAt: new Date().toISOString(),
-          mode: 'manual',
-          status: 'fallback',
-          usedFallback: true,
-          fallbackReason: reason,
-        };
-      }
-
-      this.logger.log(`Using fixed fallback rate: ${ORACLE_FALLBACK_RATE}`);
-      return {
-        rate: ORACLE_FALLBACK_RATE,
-        source: 'fixed-fallback',
-        fetchedAt: new Date().toISOString(),
-        mode: 'manual',
-        status: 'fallback',
-        usedFallback: true,
-        fallbackReason: reason,
-      };
+      this.logger.warn(
+        `Real-time oracle fetch failed (${reason}); using ORACLE_FALLBACK_RATE: ${config.fallbackRate}`,
+      );
+      return this.fallback(config.fallbackRate, reason);
     }
+  }
+
+  private fallback(rate: number, reason: string): RealTimeRateResult {
+    return {
+      rate,
+      source: 'fixed-fallback',
+      fetchedAt: new Date().toISOString(),
+      mode: ORACLE_MODE.MANUAL,
+      status: ORACLE_STATUS.VALID,
+      usedFallback: true,
+      fallbackReason: reason,
+    };
   }
 }

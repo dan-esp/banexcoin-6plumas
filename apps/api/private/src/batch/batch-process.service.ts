@@ -6,8 +6,9 @@ import { EtlStore } from '../etl/store/etl-store.service.js';
 import { ProcessingService } from '../processing/processing.service.js';
 import { CalculateRequestDto } from '../processing/dto/calculate-request.dto.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
-import { OracleService } from './oracle.service.js';
+import { OracleService } from '../oracle/oracle.service.js';
 import { AnomalyService, AnomalySummary } from '../anomaly/anomaly.service.js';
+
 import type {
   IBatchRepository,
   BatchSavePayload,
@@ -60,8 +61,7 @@ export class BatchProcessService {
     dto: ProcessBatchDto,
     authToken?: string,
   ): Promise<ProcessBatchResult> {
-    // Resolve payout FX rate: live oracle → request override → fixed fallback
-    const oracleCtx = await this.oracleService.resolveRate(dto.outputFxRate);
+    const oracleCtx = await this.oracleService.resolveRateForBatch(dto.outputFxRate);
 
     const uploadResult = await this.etlService.processUpload(
       file,
@@ -88,7 +88,15 @@ export class BatchProcessService {
       mapperErrors: uploadResult.errors,
       rows,
       report,
-      oracleContext: oracleCtx,
+      oracleContext: {
+        rate: oracleCtx.rate,
+        source: oracleCtx.source,
+        fetchedAt: oracleCtx.fetchedAt,
+        mode: oracleCtx.mode,
+        status: oracleCtx.status,
+        usedFallback: oracleCtx.usedFallback,
+        fallbackReason: oracleCtx.fallbackReason,
+      },
     };
 
     const batchId = await this.batchRepository.save(payload);

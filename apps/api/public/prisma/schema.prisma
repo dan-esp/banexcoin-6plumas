@@ -7,135 +7,115 @@ datasource db {
   url      = env("MONGODB_URI")
 }
 
-model User {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  account_number Int      @unique
-  alias          String   @unique
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-
-  transactions         Transaction[]
-  monthly_aggregations MonthlyAggregation[]
-  disbursements        Disbursement[]
+type BatchOracle {
+  rate           Float
+  source         String
+  fetchedAt      String
+  mode           String
+  status         String
+  usedFallback   Boolean
+  fallbackReason String?
 }
 
-model Transaction {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  transaction_id     String   @unique
-  cashback_run_id    String?  @db.ObjectId
-  account_number     Int
-  alias              String
-  cotizacion_number  Int
-  fecha_creacion     DateTime
-  monto_bs           Float
-  monto_usdt         Float
-  tipo_cambio        Float
-  comision           Float
-  is_anomaly         Boolean?
-  anomaly_score      Float?
-  validation_status  String?
-  validation_message String?
-  import_run_id      String?  @db.ObjectId
-  created_at         DateTime @default(now())
+model Batch {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  batchId                String?      @unique
+  filename               String?
+  batchName              String?
+  savedAt                DateTime?
+  status                 String
+  rowsLoaded             Int?
+  skipped                Int?
+  mapperErrors           Json[]
+  oracle                 BatchOracle?
+  payoutOracleRate       Float?
+  payoutOracleSource     String?
+  payoutOracleFetchedAt  DateTime?
+  payoutOracleMode       String?
+  payoutOracleStatus     String?
+  payoutOracleReason     String?
+  payoutOracleOperatorId String?
+  payoutOracleLockedAt   DateTime?
+  approvedBy             String?
+  approvedAt             DateTime?
+  exportedAt             DateTime?
+  exportReady            Boolean?
+  createdAt              DateTime?    @default(now())
+  updatedAt              DateTime?    @updatedAt
 
-  user User @relation(fields: [account_number], references: [account_number])
+  @@map("batches")
 }
 
-model MonthlyAggregation {
-  id                        String   @id @default(auto()) @map("_id") @db.ObjectId
-  cashback_run_id           String?  @db.ObjectId
-  account_number            Int
-  alias                     String
-  year                      Int
-  month                     Int
-  total_bs                  Float
-  total_usdt                Float
-  tx_count                  Int
-  tier                      String
-  cashback_rate             Float
-  cashback_percentage       Float?
-  cashback_bs               Float
-  cashback_usdt             Float
-  historical_effective_rate Float?
-  payout_oracle_rate        Float?
-  review_state              String?
-  updated_at                DateTime @updatedAt
-
-  user User @relation(fields: [account_number], references: [account_number])
-
-  @@unique([account_number, year, month])
+type CashbackAudit {
+  totalRowsFromStore        Int
+  rowsAfterTripleFilter     Int
+  rowsDiscardedByValidation Int
+  duplicatesDropped         Int
+  rowsProcessed             Int
+  manualReviewTransactions  Int
 }
 
-model CashbackRun {
-  id                       String    @id @default(auto()) @map("_id") @db.ObjectId
-  year                     Int
-  month                    Int
-  status                   String
-  validation_status        String?
-  total_users              Int
-  total_transactions       Int?
-  valid_rows               Int?
-  warning_rows             Int?      @default(0)
-  blocked_rows             Int?      @default(0)
-  total_consumption_bs     Float?
-  total_consumption_usdt   Float?
-  total_cashback_bs        Float?
-  total_cashback_usdt      Float
-  payout_oracle_rate       Float?
-  payout_oracle_source     String?
-  payout_oracle_fetched_at DateTime?
-  payout_oracle_mode       String?
-  payout_oracle_status     String?
-  payout_oracle_reason     String?
-  approved_by              String?
-  approved_at              DateTime?
-  exported_at              DateTime?
-  export_ready             Boolean?  @default(false)
-  created_at               DateTime  @default(now())
-  updated_at               DateTime? @updatedAt
+model CashbackResult {
+  id                         String         @id @default(auto()) @map("_id") @db.ObjectId
+  batchId                    String         @unique
+  batchName                  String
+  calculatedAt               DateTime
+  audit                      CashbackAudit?
+  warnings                   String[]
+  pipelineErrors             String[]
+  totalUsersAnalyzed         Int
+  usersQualifyingForCashback Int
+  usersNotQualifying         Int
+  results                    Json[]
+  banexTransferLines         Json[]
 
-  disbursements Disbursement[]
+  @@map("cashback_results")
+}
 
-  @@unique([year, month])
+model QrTransaction {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  batchId       String
+  quoteId       Int
+  createdAt     DateTime
+  status        String
+  side          String
+  username      String
+  accountId     Int
+  amountUsdt    Float
+  amountBob     Float
+  currency      String
+  fxRate        Float
+  commission    Float
+  updatedAt     DateTime
+  transactionId String
+  serviceType   String
+  oms           String
+
+  @@index([batchId])
+  @@map("qr_transactions")
 }
 
 model Anomaly {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
-  anomalyId       String    @unique
-  batchId         String
-  quoteId         Int
-  transactionId   String
-  accountId       Int
-  username        String
-  amountBob       Float
-  amountUsdt      Float
-  fxRate          Float
-  createdAt       DateTime
-  score           Float
-  isAnomaly       Boolean
-  status          String    @default("open")
-  detectedAt      DateTime
-  dismissedAt     DateTime?
-  dismissedBy     String?
-  dismissReason   String?
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  anomalyId     String    @unique
+  batchId       String?
+  quoteId       Int
+  transactionId String
+  accountId     Int
+  username      String
+  amountBob     Float
+  amountUsdt    Float
+  fxRate        Float
+  createdAt     DateTime
+  score         Float
+  isAnomaly     Boolean
+  status        String    @default("open")
+  detectedAt    DateTime
+  dismissedAt   DateTime?
+  dismissedBy   String?
+  dismissReason String?
 
   @@index([batchId])
   @@index([status])
   @@map("anomalies")
-}
-
-model Disbursement {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  cashback_run_id  String    @db.ObjectId
-  account_number   Int
-  alias            String
-  tier             String
-  cashback_usdt    Float
-  status           String
-  export_reference String?
-  generated_at     DateTime?
-  created_at       DateTime  @default(now())
-
-  cashback_run CashbackRun @relation(fields: [cashback_run_id], references: [id])
-  user         User        @relation(fields: [account_number], references: [account_number])
 }
