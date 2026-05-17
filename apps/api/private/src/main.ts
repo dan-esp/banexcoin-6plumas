@@ -42,10 +42,6 @@ async function bootstrap() {
     },
   });
 
-<<<<<<< HEAD
-  /** Match monorepo docs / .env.example (frontend PRIVATE_API_URL uses :4000). */
-=======
->>>>>>> main
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
   console.log(`Application running on: http://localhost:${port}/api/v1`);
