@@ -9,7 +9,9 @@ import type {
   PublicAnomalyDto,
   PublicBatchDto,
   PublicDisbursementDto,
+  PublicOracleContextDto,
   PublicResultDto,
+  PublicTransactionDto,
 } from "./types";
 
 type PublicItemResponse<T> = {
@@ -98,12 +100,19 @@ export function useBatchFlow(batchId?: string) {
           return;
         }
 
-        const [resultsResponse, disbursementsResponse, anomaliesResponse] =
-          await Promise.all([
-            apiFetch(`/v1/batches/${batch.id}/results`),
-            apiFetch(`/v1/batches/${batch.id}/disbursements`),
-            apiFetch(`/v1/anomalies?batchId=${batch.id}&status=open&limit=200`),
-          ]);
+        const [
+          resultsResponse,
+          disbursementsResponse,
+          transactionsResponse,
+          oracleResponse,
+          anomaliesResponse,
+        ] = await Promise.all([
+          apiFetch(`/v1/batches/${batch.id}/results`),
+          apiFetch(`/v1/batches/${batch.id}/disbursements`),
+          apiFetch(`/v1/batches/${batch.id}/transactions?limit=10`),
+          apiFetch(`/v1/oracle/batches/${batch.id}`),
+          apiFetch(`/v1/anomalies?batchId=${batch.id}&status=open&limit=200`),
+        ]);
 
         if (!resultsResponse.ok) {
           throw new Error(
@@ -117,6 +126,18 @@ export function useBatchFlow(batchId?: string) {
           );
         }
 
+        if (!transactionsResponse.ok) {
+          throw new Error(
+            `Batch transactions request failed with ${transactionsResponse.status}`,
+          );
+        }
+
+        if (!oracleResponse.ok) {
+          throw new Error(
+            `Batch oracle request failed with ${oracleResponse.status}`,
+          );
+        }
+
         const results =
           (await resultsResponse.json()) as PublicListResponse<PublicResultDto>;
         const disbursements =
@@ -124,6 +145,10 @@ export function useBatchFlow(batchId?: string) {
         const anomalies = anomaliesResponse.ok
           ? ((await anomaliesResponse.json()) as PublicListResponse<PublicAnomalyDto>)
           : { data: [] as PublicAnomalyDto[] };
+        const transactions =
+          (await transactionsResponse.json()) as PublicListResponse<PublicTransactionDto>;
+        const oracle =
+          (await oracleResponse.json()) as PublicItemResponse<PublicOracleContextDto>;
 
         if (cancelled) {
           return;
@@ -133,6 +158,8 @@ export function useBatchFlow(batchId?: string) {
           batch,
           results: results.data,
           disbursements: disbursements.data,
+          transactions: transactions.data,
+          oracle: oracle.data,
           anomalies: anomalies.data,
           error: null,
         };

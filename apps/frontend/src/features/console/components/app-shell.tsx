@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Download,
   LayoutDashboard,
+  ListOrdered,
   Upload,
 } from "lucide-react";
 import Link from "next/link";
@@ -45,6 +46,11 @@ function SidebarNav({ batch }: { batch?: PublicBatchDto | null }) {
           href: `/batches/${batch.id}/results`,
         },
         {
+          label: "Transacciones",
+          icon: ListOrdered,
+          href: `/batches/${batch.id}/transactions`,
+        },
+        {
           label: "Centro de exportación",
           icon: Download,
           href: `/batches/${batch.id}/export`,
@@ -55,6 +61,7 @@ function SidebarNav({ batch }: { batch?: PublicBatchDto | null }) {
         { label: "Cargar lote", icon: Upload, href: "/batches/new" },
         { label: "Resumen", icon: ClipboardCheck, disabled: true },
         { label: "Cálculos", icon: Banknote, disabled: true },
+        { label: "Transacciones", icon: ListOrdered, disabled: true },
         { label: "Centro de exportación", icon: Download, disabled: true },
       ];
 

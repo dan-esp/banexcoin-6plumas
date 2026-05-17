@@ -113,10 +113,74 @@ export type PublicAnomalyDto = {
   };
 };
 
+export type PublicTransactionDto = {
+  id: string;
+  transactionId: string;
+  accountNumber: number;
+  alias: string;
+  createdAt: string;
+  amounts: {
+    bs: number;
+    usdt: number;
+    impliedRate: number;
+    fee: number;
+  };
+  validation: {
+    status: string;
+    message: string | null;
+  };
+  anomaly: {
+    flagged: boolean;
+    score: number | null;
+  };
+};
+
+export type PublicOracleContextDto = {
+  batchId: string | null;
+  period: {
+    year: number;
+    month: number;
+    label: string;
+  } | null;
+  rate: number | null;
+  source: string | null;
+  fetchedAt: string | null;
+  mode: string | null;
+  status: string;
+  reason: string | null;
+  updatedAt: string | null;
+};
+
+export type PublicAccountDto = {
+  accountNumber: number;
+  alias: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicAccountMonthDto = {
+  id: string;
+  accountNumber: number;
+  alias: string;
+  period: {
+    year: number;
+    month: number;
+    label: string;
+  };
+  qrCount: number;
+  consumedBs: number;
+  consumedUsdt: number;
+  tier: string;
+  cashbackUsdt: number;
+  reviewState: string;
+};
+
 export type ConsoleDataState = {
   batch: PublicBatchDto;
   results: PublicResultDto[];
   disbursements: PublicDisbursementDto[];
   anomalies: PublicAnomalyDto[];
+  transactions: PublicTransactionDto[];
+  oracle: PublicOracleContextDto | null;
   error: string | null;
 };

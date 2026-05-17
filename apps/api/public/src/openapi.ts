@@ -12,6 +12,7 @@ export const openApiDocument = {
     { name: "auth", description: "Authenticated session inspection." },
     { name: "batches", description: "Cashback batch read endpoints." },
     { name: "accounts", description: "Account and account-month read endpoints." },
+    { name: "oracle", description: "Payout oracle read endpoints." },
     { name: "legacy", description: "Compatibility read endpoints." },
   ],
   components: {
@@ -136,6 +137,20 @@ export const openApiDocument = {
           tier: { type: "string", example: "gold" },
           cashbackUsdt: { type: "number", example: 4 },
           reviewState: { type: "string", example: "ready" },
+        },
+      },
+      OracleContext: {
+        type: "object",
+        properties: {
+          batchId: { type: "string", nullable: true },
+          period: { type: "object", nullable: true },
+          rate: { type: "number", nullable: true },
+          source: { type: "string", nullable: true },
+          fetchedAt: { type: "string", format: "date-time", nullable: true },
+          mode: { type: "string", nullable: true },
+          status: { type: "string", example: "valid" },
+          reason: { type: "string", nullable: true },
+          updatedAt: { type: "string", format: "date-time", nullable: true },
         },
       },
     },
@@ -400,6 +415,28 @@ export const openApiDocument = {
           "200": { description: "Legacy run disbursements." },
           "401": { description: "Missing or invalid bearer token." },
           "404": { description: "Run not found." },
+        },
+      },
+    },
+    "/v1/oracle/current": {
+      get: {
+        tags: ["oracle"],
+        summary: "Get the latest payout oracle context",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          "200": { description: "Latest known payout oracle context." },
+        },
+      },
+    },
+    "/v1/oracle/batches/{id}": {
+      get: {
+        tags: ["oracle"],
+        summary: "Get payout oracle context for a batch",
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Batch payout oracle context." },
+          "404": { description: "Batch not found." },
         },
       },
     },

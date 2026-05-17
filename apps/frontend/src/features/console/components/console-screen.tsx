@@ -10,7 +10,9 @@ import { BrandHeader } from "./brand-header";
 import { CalculationReview } from "./calculation-review";
 import { ExecutiveSummary } from "./executive-summary";
 import { KpiCard } from "./kpi-card";
+import { OracleContextCard } from "./oracle-context-card";
 import { ErrorState } from "./states";
+import { TransactionsTable } from "./transactions-table";
 import { ValidationBanner } from "./validation-banner";
 import { WorkflowStepper } from "./workflow-stepper";
 
@@ -18,6 +20,8 @@ export function ConsoleScreen({
   batch,
   results,
   anomalies,
+  transactions,
+  oracle,
   error,
 }: ConsoleDataState) {
   return (
@@ -55,9 +59,22 @@ export function ConsoleScreen({
         <ExecutiveSummary batch={batch} />
       </section>
 
+      <OracleContextCard oracle={oracle} />
       <ValidationBanner batch={batch} />
       <AnomaliesPanel initialAnomalies={anomalies} />
       <CalculationReview batch={batch} results={results} />
+      <section className="grid gap-4">
+        <div>
+          <h2 className="font-bold text-2xl text-foreground">
+            Transacciones visibles del lote
+          </h2>
+          <p className={`mt-2 text-sm ${consoleMutedText}`}>
+            Vista de lectura para contrastar QR, validación y señales de
+            anomalía sin salir del flujo operativo.
+          </p>
+        </div>
+        <TransactionsTable transactions={transactions} />
+      </section>
       <AuditTimeline batch={batch} />
 
       <Separator />

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -40,9 +41,21 @@ export function ResultsTable({ results }: { results: PublicResultDto[] }) {
         {results.map((result) => (
           <TableRow key={result.id}>
             <TableCell className="font-semibold text-foreground">
-              {result.accountNumber}
+              <Link
+                className="underline decoration-[var(--brand-border)] underline-offset-4"
+                href={`/accounts/${result.accountNumber}`}
+              >
+                {result.accountNumber}
+              </Link>
             </TableCell>
-            <TableCell className={consoleMutedText}>{result.alias}</TableCell>
+            <TableCell className={consoleMutedText}>
+              <Link
+                className="underline decoration-transparent underline-offset-4 transition-colors hover:decoration-[var(--brand-border)]"
+                href={`/accounts/${result.accountNumber}`}
+              >
+                {result.alias}
+              </Link>
+            </TableCell>
             <TableCell>{result.totals.qrCount}</TableCell>
             <TableCell>{formatBs(result.totals.consumedBs)}</TableCell>
             <TableCell>{formatUsdt(result.totals.consumedUsdt)}</TableCell>

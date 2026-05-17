@@ -239,6 +239,12 @@ export function BatchListClient() {
                 </Link>
                 <Link
                   className={`rounded-full border px-4 py-2 font-semibold text-sm text-foreground transition-colors hover:bg-[var(--brand-soft)] ${consoleSoftSurface}`}
+                  href={`/batches/${batch.id}/transactions`}
+                >
+                  Transacciones
+                </Link>
+                <Link
+                  className={`rounded-full border px-4 py-2 font-semibold text-sm text-foreground transition-colors hover:bg-[var(--brand-soft)] ${consoleSoftSurface}`}
                   href={`/batches/${batch.id}/export`}
                 >
                   Exportación
