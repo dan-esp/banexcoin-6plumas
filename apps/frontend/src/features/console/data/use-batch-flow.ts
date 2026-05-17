@@ -9,7 +9,6 @@ import type {
   PublicAnomalyDto,
   PublicBatchDto,
   PublicDisbursementDto,
-  PublicOracleContextDto,
   PublicResultDto,
   PublicTransactionDto,
 } from "./types";
@@ -104,13 +103,11 @@ export function useBatchFlow(batchId?: string) {
           resultsResponse,
           disbursementsResponse,
           transactionsResponse,
-          oracleResponse,
           anomaliesResponse,
         ] = await Promise.all([
           apiFetch(`/v1/batches/${batch.id}/results`),
           apiFetch(`/v1/batches/${batch.id}/disbursements`),
           apiFetch(`/v1/batches/${batch.id}/transactions?limit=10`),
-          apiFetch(`/v1/oracle/batches/${batch.id}`),
           apiFetch(`/v1/anomalies?batchId=${batch.id}&status=open&limit=200`),
         ]);
 
@@ -132,12 +129,6 @@ export function useBatchFlow(batchId?: string) {
           );
         }
 
-        if (!oracleResponse.ok) {
-          throw new Error(
-            `Batch oracle request failed with ${oracleResponse.status}`,
-          );
-        }
-
         const results =
           (await resultsResponse.json()) as PublicListResponse<PublicResultDto>;
         const disbursements =
@@ -147,8 +138,6 @@ export function useBatchFlow(batchId?: string) {
           : { data: [] as PublicAnomalyDto[] };
         const transactions =
           (await transactionsResponse.json()) as PublicListResponse<PublicTransactionDto>;
-        const oracle =
-          (await oracleResponse.json()) as PublicItemResponse<PublicOracleContextDto>;
 
         if (cancelled) {
           return;
@@ -159,7 +148,17 @@ export function useBatchFlow(batchId?: string) {
           results: results.data,
           disbursements: disbursements.data,
           transactions: transactions.data,
-          oracle: oracle.data,
+          oracle: {
+            batchId: batch.id,
+            period: batch.period,
+            rate: batch.payoutOracle.rate,
+            source: batch.payoutOracle.source,
+            fetchedAt: batch.payoutOracle.fetchedAt,
+            mode: batch.payoutOracle.mode,
+            status: batch.payoutOracle.status ?? "missing_rate",
+            reason: batch.payoutOracle.reason,
+            updatedAt: null,
+          },
           anomalies: anomalies.data,
           error: null,
         };

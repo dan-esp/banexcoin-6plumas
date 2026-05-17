@@ -55,10 +55,3 @@ function useAuthorizedFetcher(
 export function useApiClient() {
   return useAuthorizedFetcher(process.env.NEXT_PUBLIC_API_URL, "Public API");
 }
-
-export function usePrivateApiClient() {
-  return useAuthorizedFetcher(
-    process.env.NEXT_PUBLIC_PRIVATE_API_URL,
-    "Private API",
-  );
-}

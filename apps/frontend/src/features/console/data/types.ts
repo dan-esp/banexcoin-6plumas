@@ -37,7 +37,7 @@ export type PublicBatchDto = {
     status: string | null;
     reason: string | null;
   };
-  approval: {
+  approval: { 
     approved: boolean;
     approvedBy: string | null;
     approvedAt: string | null;

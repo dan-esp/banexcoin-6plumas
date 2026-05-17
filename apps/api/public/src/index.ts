@@ -10,7 +10,6 @@ import { prisma } from './db/client'
 import { healthRoutes } from './health/routes'
 import { legacyRoutes } from './legacy/routes'
 import { openApiDocument } from './openapi'
-import { oracleRoutes } from './oracle/routes'
 import { HttpError } from './shared/http-error'
 
 const app = new Hono()
@@ -60,7 +59,6 @@ app.get('/auth/session', (c) => {
 app.route('/v1/batches', batchRoutes)
 app.route('/v1/accounts', accountRoutes)
 app.route('/v1/anomalies', anomalyRoutes)
-app.route('/v1/oracle', oracleRoutes)
 app.route('/', legacyRoutes)
 
 app.notFound((c) =>

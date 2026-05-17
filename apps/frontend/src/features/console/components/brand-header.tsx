@@ -12,12 +12,20 @@ import {
   consoleMutedText,
   consoleSoftSurface,
   formatBs,
+  formatOracleRate,
   formatUsdt,
   getNextAction,
 } from "../lib";
 
 export function BrandHeader({ batch }: { batch: PublicBatchDto }) {
   const nextAction = getNextAction(batch);
+  const oracleStatusTone =
+    batch.payoutOracle.status?.toLowerCase() === "valid"
+      ? "success"
+      : "warning";
+  const oracleFetchedAt = batch.payoutOracle.fetchedAt
+    ? new Date(batch.payoutOracle.fetchedAt).toLocaleString("es-BO")
+    : "Pendiente";
 
   return (
     <section
@@ -91,6 +99,40 @@ export function BrandHeader({ batch }: { batch: PublicBatchDto }) {
               <p className="mt-2 font-bold text-2xl">
                 {formatUsdt(batch.totals.cashbackUsdt)}
               </p>
+            </div>
+            <div className={cn("rounded-2xl p-4", consoleSoftSurface)}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className={cn("text-xs", consoleMutedText)}>
+                    Oracle actual
+                  </p>
+                  <p className="mt-2 font-bold text-xl text-foreground">
+                    {formatOracleRate(batch.payoutOracle.rate)}
+                  </p>
+                </div>
+                <Badge tone={oracleStatusTone}>
+                  {batch.payoutOracle.status ?? "Pendiente"}
+                </Badge>
+              </div>
+              <div className="mt-3 grid gap-2 text-sm">
+                <p className={consoleMutedText}>
+                  Fuente:{" "}
+                  <span className="font-medium text-foreground">
+                    {batch.payoutOracle.source ?? "Pendiente"}
+                  </span>
+                </p>
+                <p className={consoleMutedText}>
+                  Lectura:{" "}
+                  <span className="font-medium text-foreground">
+                    {oracleFetchedAt}
+                  </span>
+                </p>
+                {!batch.payoutOracle.rate ? (
+                  <p className={consoleMutedText}>
+                    Sin tasa bloqueada todavía para este lote.
+                  </p>
+                ) : null}
+              </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className={cn("rounded-2xl p-4", consoleSoftSurface)}>

@@ -9,7 +9,6 @@ import {
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Public } from '../auth/public.decorator';
 import {
   CurrentOracleRateResponseDto,
   LockedOracleContextResponseDto,
@@ -19,7 +18,6 @@ import { ORACLE_ROUTES } from './oracle.constants';
 import { OracleService } from './oracle.service';
 
 @ApiTags('oracle')
-@Public()
 @Controller()
 export class OracleController {
   constructor(private readonly oracleService: OracleService) {}

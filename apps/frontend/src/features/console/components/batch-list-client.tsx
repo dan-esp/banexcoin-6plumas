@@ -22,7 +22,7 @@ import {
   resultTone,
 } from "../lib";
 import { AppShell } from "./app-shell";
-import { EmptyState, ErrorState } from "./states";
+import { ErrorState } from "./states";
 
 type PublicListResponse<T> = {
   data: T[];
@@ -32,7 +32,10 @@ type BatchListState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "empty" }
-  | { status: "ready"; batches: PublicBatchDto[] };
+  | {
+      status: "ready";
+      batches: PublicBatchDto[];
+    };
 
 let cachedBatchList: PublicBatchDto[] | null = null;
 
@@ -53,7 +56,10 @@ export function BatchListClient() {
   const apiFetch = useApiClient();
   const [state, setState] = useState<BatchListState>(
     cachedBatchList
-      ? { status: "ready", batches: cachedBatchList }
+      ? {
+          status: "ready",
+          batches: cachedBatchList,
+        }
       : { status: "loading" },
   );
 
@@ -62,7 +68,10 @@ export function BatchListClient() {
 
     async function loadBatches() {
       if (cachedBatchList) {
-        setState({ status: "ready", batches: cachedBatchList });
+        setState({
+          status: "ready",
+          batches: cachedBatchList,
+        });
         return;
       }
 
@@ -70,6 +79,7 @@ export function BatchListClient() {
 
       try {
         const response = await apiFetch("/v1/batches?limit=20");
+
         if (!response.ok) {
           throw new Error(`Public API responded with ${response.status}`);
         }
@@ -88,7 +98,10 @@ export function BatchListClient() {
 
         cachedBatchList = payload.data;
 
-        setState({ status: "ready", batches: payload.data });
+        setState({
+          status: "ready",
+          batches: payload.data,
+        });
       } catch (error) {
         if (cancelled) {
           return;
@@ -129,6 +142,18 @@ export function BatchListClient() {
     return (
       <AppShell>
         <div className="grid gap-5">
+          <section className="grid gap-4" id="dashboard">
+            <div>
+              <h1 className="font-bold text-3xl text-foreground">
+                Panel operativo
+              </h1>
+              <p className={`mt-2 text-sm ${consoleMutedText}`}>
+                La consola ya está lista para trabajar. Cuando subas el primer
+                lote, este tablero mostrará su validación, cálculo y
+                exportación.
+              </p>
+            </div>
+          </section>
           <Card className={cn(consoleSurface, "rounded-[2rem]")}>
             <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -159,12 +184,75 @@ export function BatchListClient() {
             </CardContent>
           </Card>
 
-          <div className={`${consoleStatePanel} max-w-3xl p-6`}>
-            <EmptyState
-              title="Todavía no hay lotes de cashback"
-              description="El panel autenticado está conectado, pero el backend del flujo aún no ha persistido ningún lote operativo."
-            />
-          </div>
+          <Card className={consoleSurface}>
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>Lotes publicados</CardTitle>
+                <p className={`mt-2 text-sm ${consoleMutedText}`}>
+                  Aún no hay lotes persistidos, pero esta lista quedará visible
+                  desde aquí en cuanto subas el primero.
+                </p>
+              </div>
+              <Badge tone="neutral">0 lotes</Badge>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {[0, 1].map((item) => (
+                <div
+                  className={cn(
+                    "rounded-[1.5rem] border border-dashed border-[var(--brand-border)] p-5",
+                    consoleSoftSurface,
+                  )}
+                  key={item}
+                >
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        Esperando lote mensual
+                      </p>
+                      <p className={`mt-2 text-sm ${consoleMutedText}`}>
+                        Aquí verás el período, estado, consumo, cashback y
+                        accesos rápidos al resumen cuando exista un lote.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <span
+                        className={cn(
+                          "rounded-full border px-4 py-2 font-semibold text-sm opacity-60",
+                          consoleSoftSurface,
+                        )}
+                      >
+                        Resumen
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full border px-4 py-2 font-semibold text-sm opacity-60",
+                          consoleSoftSurface,
+                        )}
+                      >
+                        Resultados
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full border px-4 py-2 font-semibold text-sm opacity-60",
+                          consoleSoftSurface,
+                        )}
+                      >
+                        Transacciones
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full border px-4 py-2 font-semibold text-sm opacity-60",
+                          consoleSoftSurface,
+                        )}
+                      >
+                        Exportación
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </AppShell>
     );

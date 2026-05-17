@@ -13,9 +13,9 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { usePrivateApiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
+import { createBatchAction } from "../actions/create-batch";
 import {
   brandGradient,
   consoleMutedText,
@@ -64,7 +64,6 @@ function formatBatchName(periodMonth: string) {
 export function BatchUploadClient() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
-  const privateApiFetch = usePrivateApiClient();
   const [periodMonth, setPeriodMonth] = useState("2026-05");
   const [minimumBob, setMinimumBob] = useState("100");
   const [outputFxRate, setOutputFxRate] = useState("");
@@ -116,28 +115,13 @@ export function BatchUploadClient() {
     }
 
     try {
-      const response = await privateApiFetch("/api/v1/batches/process", {
-        method: "POST",
-        body: formData,
-        timeoutMs: 30000,
-      });
+      const result = await createBatchAction(formData);
 
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(
-          message || `Private API responded with ${response.status}`,
-        );
+      if (result.status === "error") {
+        throw new Error(result.message);
       }
 
-      const payload = (await response.json()) as { batchId?: string };
-
-      if (!payload.batchId) {
-        throw new Error(
-          "La API privada no devolvió el identificador del lote.",
-        );
-      }
-
-      router.push(`/batches/${payload.batchId}`);
+      router.push(`/batches/${result.batchId}`);
       router.refresh();
     } catch (error) {
       setUploadState({
