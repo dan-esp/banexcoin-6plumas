@@ -16,6 +16,7 @@ import { ReportBuilder } from './output/report.builder.js';
 @Module({
   imports: [EtlModule],
   controllers: [ProcessingController],
+  exports: [ProcessingService],
   providers: [
     ProcessingService,
     ConfigValidator,

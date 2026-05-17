@@ -21,6 +21,6 @@ import { FileValidatorService } from './validators/file-validator.service.js';
     QrPaymentsMapper,
     FileValidatorService,
   ],
-  exports: [EtlStore],
+  exports: [EtlStore, EtlService],
 })
 export class EtlModule {}
