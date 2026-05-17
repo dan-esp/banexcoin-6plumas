@@ -1,147 +1,173 @@
+"use client";
+
 import {
-  AlertTriangle,
   Banknote,
-  Building2,
-  CircleDollarSign,
+  CircleSlash,
   ClipboardCheck,
   Download,
-  History,
   LayoutDashboard,
-  Search,
+  ListOrdered,
   Upload,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { PropsWithChildren } from "react";
 
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-import type {
-  ConsoleDataSource,
-  ConsoleNotice,
-  PublicBatchDto,
-} from "../data";
-import { brandGradient, brandGradientText } from "../lib";
+import type { PublicBatchDto } from "../data";
+import { brandGradient, consoleGlassSurface, consoleMutedText } from "../lib";
 
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "#dashboard" },
-  { label: "Upload report", icon: Upload, href: "#upload" },
-  { label: "Validation", icon: ClipboardCheck, href: "#validation" },
-  { label: "Tier rules", icon: CircleDollarSign, href: "#tiers" },
-  { label: "Calculations", icon: Banknote, href: "#calculations" },
-  { label: "AI anomalies", icon: AlertTriangle, href: "#anomalies" },
-  { label: "Export center", icon: Download, href: "#export" },
-  { label: "Audit log", icon: History, href: "#audit" },
-];
+type NavItem = {
+  label: string;
+  icon: typeof LayoutDashboard;
+  href?: string;
+  disabled?: boolean;
+};
 
-function BrandMark() {
+function SidebarNav({ batch }: { batch?: PublicBatchDto | null }) {
+  const pathname = usePathname();
+  const navItems: NavItem[] = batch
+    ? [
+        { label: "Lotes", icon: LayoutDashboard, href: "/batches" },
+        { label: "Cargar lote", icon: Upload, href: "/batches/new" },
+        {
+          label: "Resumen",
+          icon: ClipboardCheck,
+          href: `/batches/${batch.id}`,
+        },
+        {
+          label: "Cálculos",
+          icon: Banknote,
+          href: `/batches/${batch.id}/results`,
+        },
+        {
+          label: "Transacciones",
+          icon: ListOrdered,
+          href: `/batches/${batch.id}/transactions`,
+        },
+        {
+          label: "Centro de exportación",
+          icon: Download,
+          href: `/batches/${batch.id}/export`,
+        },
+      ]
+    : [
+        { label: "Lotes", icon: LayoutDashboard, href: "/batches" },
+        { label: "Cargar lote", icon: Upload, href: "/batches/new" },
+        { label: "Resumen", icon: ClipboardCheck, disabled: true },
+        { label: "Cálculos", icon: Banknote, disabled: true },
+        { label: "Transacciones", icon: ListOrdered, disabled: true },
+        { label: "Centro de exportación", icon: Download, disabled: true },
+      ];
+
   return (
-    <div className="flex items-center gap-3">
-      <div
-        aria-hidden="true"
-        className={cn(
-          "grid size-10 place-items-center rounded-full font-black text-[var(--brand-bg)] text-sm shadow-[0_0_28px_rgba(255,93,48,0.34)]",
-          brandGradient,
-        )}
-      >
-        B
-      </div>
-      <div className="min-w-0">
-        <p className="truncate font-bold text-lg leading-tight text-white">
-          BanexReintegra
-        </p>
-        <p className={cn("font-semibold text-xs", brandGradientText)}>
-          Manager
-        </p>
-      </div>
-    </div>
-  );
-}
+    <aside className="flex min-h-full w-full flex-col border-[var(--brand-border)] border-r bg-[var(--brand-bg)] px-4 py-5 text-foreground lg:fixed lg:inset-y-0 lg:left-0 lg:w-72">
+      <BrandLogo variant="console" />
+      <nav aria-label="Console navigation" className="mt-8 grid gap-1.5">
+        {navItems.map((item) => {
+          const active =
+            item.href === "/batches"
+              ? pathname === "/batches"
+              : item.href
+                ? pathname.startsWith(item.href)
+                : false;
 
-function SidebarNav({ batch }: { batch: PublicBatchDto }) {
-  return (
-    <aside className="flex min-h-full w-full flex-col border-[var(--brand-border)] border-r bg-[var(--brand-bg)] px-4 py-5 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-72">
-      <BrandMark />
-      <nav className="mt-8 grid gap-1.5" aria-label="Console navigation">
-        {navItems.map((item, index) => (
-          <a
-            className={cn(
-              "group flex h-10 items-center gap-3 rounded-full border border-transparent px-3 font-semibold text-sm text-white/58 transition-colors hover:border-white/10 hover:bg-white/[0.06] hover:text-white",
-              index === 0 &&
-                "border-white/10 bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
-            )}
-            href={item.href}
-            key={item.label}
-          >
-            <span
-              className={cn(
-                "grid size-7 place-items-center rounded-full bg-white/[0.06] text-white/70",
-                index === 0 && brandGradient,
-              )}
-            >
-              <item.icon className="size-4" />
-            </span>
-            {item.label}
-          </a>
-        ))}
+          const itemClass = cn(
+            "group flex h-10 items-center gap-3 rounded-full border border-transparent px-3 font-semibold text-sm transition-colors",
+            consoleMutedText,
+            !item.disabled &&
+              "hover:border-[var(--brand-border)] hover:bg-[var(--brand-soft)] hover:text-foreground",
+            active &&
+              "border-[var(--brand-border)] bg-[var(--brand-soft)] text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+            item.disabled && "cursor-not-allowed opacity-50",
+          );
+
+          const iconClass = cn(
+            "grid size-7 place-items-center rounded-full bg-[var(--brand-soft)] text-muted-foreground",
+            active && brandGradient,
+          );
+
+          const content = (
+            <>
+              <span className={iconClass}>
+                <item.icon className="size-4" />
+              </span>
+              {item.label}
+            </>
+          );
+
+          if (item.href && !item.disabled) {
+            return (
+              <Link className={itemClass} href={item.href} key={item.label}>
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <div className={itemClass} key={item.label}>
+              {content}
+            </div>
+          );
+        })}
       </nav>
-      <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.06] p-4 lg:mt-auto">
-        <p className="font-semibold text-white/45 text-xs">Current batch</p>
-        <p className="mt-2 font-bold text-2xl">{batch.period.label}</p>
-        <Badge className="mt-4" tone="warning">
-          {batch.status}
+      <div
+        className={cn("mt-8 rounded-3xl p-4 lg:mt-auto", consoleGlassSurface)}
+      >
+        <p className={cn("font-semibold text-xs", consoleMutedText)}>
+          {batch ? "Lote actual" : "Estado actual"}
+        </p>
+        <p className="mt-2 font-bold text-2xl">
+          {batch ? batch.period.label : "Sin lotes persistidos"}
+        </p>
+        <Badge className="mt-4" tone={batch ? "warning" : "neutral"}>
+          {batch ? batch.status : "Esperando primer lote"}
         </Badge>
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-          <div className={cn("h-full w-2/3 rounded-full", brandGradient)} />
+        {!batch ? (
+          <div
+            className={cn(
+              "mt-4 flex items-center gap-2 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-sm",
+              consoleMutedText,
+            )}
+          >
+            <CircleSlash className="size-4 shrink-0" />
+            Las vistas de resumen, cálculo y exportación se habilitan cuando el
+            backend publique el primer lote.
+          </div>
+        ) : null}
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn(
+              "h-full rounded-full",
+              batch ? "w-2/3" : "w-1/5",
+              brandGradient,
+            )}
+          />
         </div>
       </div>
     </aside>
   );
 }
 
-function Topbar({
-  dataSource,
-  notice,
-}: {
-  dataSource: ConsoleDataSource;
-  notice: ConsoleNotice;
-}) {
-  const apiConnected = dataSource === "api" && notice?.tone !== "error";
+function Topbar() {
   return (
-    <header className="sticky top-0 z-20 border-[var(--brand-border)] border-b bg-[rgba(23,23,36,0.86)] backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-[var(--brand-border)] border-b bg-background/88 backdrop-blur-xl">
       <div className="flex min-h-20 flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-10">
         <div className="min-w-0">
-          <p className="font-bold text-2xl text-white">
-            BanexReintegra Console
+          <p className="font-bold text-2xl text-foreground">
+            {brand.consoleTitle}
           </p>
-          <p className="text-sm text-white/48">
-            Internal QR cashback workflow for USDT payouts in bolivianos
+          <p className={cn("text-sm", consoleMutedText)}>
+            {brand.consoleDescriptor} para revisión mensual de cashback QR
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge tone={apiConnected ? "success" : "warning"}>
-            {apiConnected ? "API connected" : "Fixture mode"}
-          </Badge>
-          <div className="relative w-full sm:w-64">
-            <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-white/40" />
-            <Input
-              className="border-white/10 bg-white/[0.06] pl-9 text-white placeholder:text-white/38"
-              placeholder="Search batch, user, tx"
-            />
-          </div>
-          <Button
-            className="border-white/10 bg-white/[0.06] text-white hover:bg-white/10"
-            size="lg"
-            variant="outline"
-          >
-            <Building2 />
-            Acceso Empresas
-          </Button>
-          <Button className={cn("text-white", brandGradient)} size="lg">
-            <Download />
-            Descargar App
-          </Button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
         </div>
       </div>
     </header>
@@ -150,19 +176,15 @@ function Topbar({
 
 export function AppShell({
   batch,
-  dataSource,
-  notice,
   children,
 }: PropsWithChildren<{
-  batch: PublicBatchDto;
-  dataSource: ConsoleDataSource;
-  notice: ConsoleNotice;
+  batch?: PublicBatchDto | null;
 }>) {
   return (
     <div className="min-h-screen bg-[var(--brand-bg)] text-foreground">
       <SidebarNav batch={batch} />
       <div className="lg:pl-72">
-        <Topbar dataSource={dataSource} notice={notice} />
+        <Topbar />
         <main className="grid gap-7 p-5 lg:p-10">{children}</main>
       </div>
     </div>

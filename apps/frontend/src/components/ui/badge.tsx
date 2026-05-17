@@ -8,7 +8,7 @@ const toneClass = {
   warning: "bg-[var(--warning-orange)]/15 text-[var(--warning-orange)]",
   danger: "bg-[var(--blocked-red)]/15 text-[var(--blocked-red)]",
   info: "bg-[var(--info-blue)]/15 text-[#b9adff]",
-  neutral: "bg-white/10 text-white/58",
+  neutral: "bg-muted text-muted-foreground",
 } as const;
 
 function Badge({
