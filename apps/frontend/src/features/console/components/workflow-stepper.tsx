@@ -8,18 +8,25 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { PublicBatchDto } from "../data";
-import { brandGradient, getCurrentWorkflowIndex, workflowSteps } from "../lib";
+import {
+  brandGradient,
+  consoleMutedText,
+  consoleSurface,
+  getCurrentWorkflowIndex,
+  workflowSteps,
+} from "../lib";
 
 export function WorkflowStepper({ batch }: { batch: PublicBatchDto }) {
   const currentIndex = getCurrentWorkflowIndex(batch.status);
 
   return (
-    <Card className="border-white/10 bg-white/[0.06] text-white">
+    <Card className={consoleSurface}>
       <CardHeader>
-        <CardTitle className="text-white">Monthly batch progress</CardTitle>
-        <CardDescription className="text-white/52">
-          Current blocker: {batch.validation.blockedRows} transaction rows need
-          correction before BanexTransfer payout export can be approved.
+        <CardTitle>Progreso del lote mensual</CardTitle>
+        <CardDescription>
+          Bloqueo actual: {batch.validation.blockedRows} filas de transacción
+          necesitan corrección antes de aprobar la exportación para
+          BanexTransfer.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -37,7 +44,7 @@ export function WorkflowStepper({ batch }: { batch: PublicBatchDto }) {
                     "flex size-9 items-center justify-center rounded-full border font-bold text-xs",
                     done
                       ? cn("border-transparent text-white", brandGradient)
-                      : "border-white/10 bg-white/[0.04] text-white/38",
+                      : "border-[var(--brand-border)] bg-[var(--brand-soft)] text-muted-foreground",
                   )}
                 >
                   {index + 1}
@@ -45,7 +52,7 @@ export function WorkflowStepper({ batch }: { batch: PublicBatchDto }) {
                 <p
                   className={cn(
                     "text-center font-semibold text-xs leading-4",
-                    done ? "text-white" : "text-white/42",
+                    done ? "text-foreground" : consoleMutedText,
                   )}
                 >
                   {step}

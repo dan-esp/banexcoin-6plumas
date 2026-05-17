@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { Scalar } from '@scalar/hono-api-reference'
 import { accountRoutes } from './accounts/routes'
@@ -12,6 +13,17 @@ import { openApiDocument } from './openapi'
 import { HttpError } from './shared/http-error'
 
 const app = new Hono()
+const allowedOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:3000'
+
+app.use(
+  '*',
+  cors({
+    origin: allowedOrigin,
+    allowHeaders: ['Authorization', 'Content-Type'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    maxAge: 86400,
+  })
+)
 
 app.route('/health', healthRoutes)
 app.get('/openapi.json', (c) => c.json(openApiDocument))

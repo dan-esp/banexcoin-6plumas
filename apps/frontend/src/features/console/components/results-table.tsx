@@ -9,15 +9,15 @@ import {
 } from "@/components/ui/table";
 
 import type { PublicResultDto } from "../data";
-import { formatBs, formatUsdt, resultTone } from "../lib";
+import { consoleMutedText, formatBs, formatUsdt, resultTone } from "../lib";
 import { EmptyState } from "./states";
 
 export function ResultsTable({ results }: { results: PublicResultDto[] }) {
   if (results.length === 0) {
     return (
       <EmptyState
-        description="Once the public API returns calculation rows, this table will render the read DTOs directly."
-        title="No calculation results returned"
+        description="Cuando la API pública devuelva filas de cálculo, esta tabla mostrará directamente los DTOs de lectura."
+        title="No se devolvieron resultados de cálculo"
       />
     );
   }
@@ -25,29 +25,29 @@ export function ResultsTable({ results }: { results: PublicResultDto[] }) {
   return (
     <Table>
       <TableHeader>
-        <TableRow className="border-white/10">
-          <TableHead>User ID</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>QR count</TableHead>
-          <TableHead>Consumed Bs</TableHead>
-          <TableHead>Consumed USDT</TableHead>
-          <TableHead>Tier</TableHead>
+        <TableRow>
+          <TableHead>ID usuario</TableHead>
+          <TableHead>Nombre</TableHead>
+          <TableHead>Cantidad QR</TableHead>
+          <TableHead>Consumo Bs</TableHead>
+          <TableHead>Consumo USDT</TableHead>
+          <TableHead>Nivel</TableHead>
           <TableHead>Cashback USDT</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead>Estado</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {results.map((result) => (
-          <TableRow className="border-white/10" key={result.id}>
-            <TableCell className="font-semibold text-white">
+          <TableRow key={result.id}>
+            <TableCell className="font-semibold text-foreground">
               {result.accountNumber}
             </TableCell>
-            <TableCell>{result.alias}</TableCell>
+            <TableCell className={consoleMutedText}>{result.alias}</TableCell>
             <TableCell>{result.totals.qrCount}</TableCell>
             <TableCell>{formatBs(result.totals.consumedBs)}</TableCell>
             <TableCell>{formatUsdt(result.totals.consumedUsdt)}</TableCell>
             <TableCell>{result.tier.name}</TableCell>
-            <TableCell className="font-bold text-white">
+            <TableCell className="font-bold text-foreground">
               {formatUsdt(result.cashback.usdt)}
             </TableCell>
             <TableCell>

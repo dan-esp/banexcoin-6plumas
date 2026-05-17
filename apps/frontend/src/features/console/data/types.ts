@@ -113,19 +113,10 @@ export type PublicAnomalyDto = {
   };
 };
 
-export type ConsoleDataSource = "api" | "fixture";
-
-export type ConsoleNotice = {
-  tone: "info" | "error";
-  title: string;
-  message: string;
-} | null;
-
 export type ConsoleDataState = {
   batch: PublicBatchDto;
   results: PublicResultDto[];
   disbursements: PublicDisbursementDto[];
   anomalies: PublicAnomalyDto[];
-  source: ConsoleDataSource;
-  notice: ConsoleNotice;
+  error: string | null;
 };

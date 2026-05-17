@@ -7,6 +7,7 @@
     "compose": "docker compose up -d",
     "compose:build": "docker compose up --build -d",
     "down": "docker compose down",
+    "dev:site": "pnpm -F=frontend dev",
     "dev:web": "pnpm -F=frontend dev",
     "dev:private": "pnpm -F=private start:dev",
     "dev:public": "bun run --cwd ./apps/api/public dev",

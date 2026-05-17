@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+import { consoleMutedText, consoleSurface } from "../lib";
+
 const toneClass = {
   success: "text-[var(--success)]",
   info: "text-[var(--info-blue)]",
@@ -20,9 +22,11 @@ export function KpiCard({
   tone?: keyof typeof toneClass;
 }) {
   return (
-    <Card className="border-white/10 bg-white/[0.06] p-5 text-white shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
-      <p className="font-semibold text-white/44 text-xs">{label}</p>
-      <p className="mt-3 break-words font-bold text-2xl text-white">{value}</p>
+    <Card className={cn("p-5", consoleSurface)}>
+      <p className={cn("font-semibold text-xs", consoleMutedText)}>{label}</p>
+      <p className="mt-3 break-words font-bold text-2xl text-foreground">
+        {value}
+      </p>
       <p className={cn("mt-4 font-semibold text-xs", toneClass[tone])}>
         {note}
       </p>
