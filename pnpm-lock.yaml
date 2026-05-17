@@ -6431,7 +6431,7 @@ snapshots:
 
   '@types/set-cookie-parser@2.4.10':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 24.12.4
 
   '@types/statuses@2.0.6': {}
 

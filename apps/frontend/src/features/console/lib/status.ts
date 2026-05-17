@@ -1,12 +1,12 @@
 import type { PublicBatchDto } from "../data";
 
 export const workflowSteps = [
-  "Uploaded",
-  "Validated",
-  "Calculated",
-  "Under Review",
-  "Approved",
-  "Exported",
+  "Cargado",
+  "Validado",
+  "Calculado",
+  "En revisión",
+  "Aprobado",
+  "Exportado",
 ] as const;
 
 export type StatusTone = "success" | "info" | "warning" | "danger" | "neutral";
@@ -30,8 +30,9 @@ export function getCurrentWorkflowIndex(status: string) {
 export function getNextAction(batch: PublicBatchDto) {
   if (batch.validation.blockedRows > 0) {
     return {
-      label: "Review blocked rows",
-      description: "Resolve validation blockers before approval or export.",
+      label: "Revisar filas bloqueadas",
+      description:
+        "Resuelve los bloqueos de validación antes de aprobar o exportar.",
       tone: "danger" as const,
       enabled: true,
     };
@@ -39,8 +40,9 @@ export function getNextAction(batch: PublicBatchDto) {
 
   if (!batch.approval.approved) {
     return {
-      label: "Send to finance",
-      description: "Validation is clear; finance approval is the next gate.",
+      label: "Enviar a finanzas",
+      description:
+        "La validación está limpia; la aprobación de finanzas es el siguiente control.",
       tone: "warning" as const,
       enabled: true,
     };
@@ -48,16 +50,17 @@ export function getNextAction(batch: PublicBatchDto) {
 
   if (!batch.export.ready) {
     return {
-      label: "Prepare export",
-      description: "Approval is recorded; export generation can be unlocked.",
+      label: "Preparar exportación",
+      description:
+        "La aprobación ya fue registrada; ahora se puede habilitar la generación del archivo.",
       tone: "info" as const,
       enabled: true,
     };
   }
 
   return {
-    label: "Generate CSV",
-    description: "BanexTransfer payout export is ready.",
+    label: "Generar CSV",
+    description: "La exportación de pagos para BanexTransfer está lista.",
     tone: "success" as const,
     enabled: true,
   };

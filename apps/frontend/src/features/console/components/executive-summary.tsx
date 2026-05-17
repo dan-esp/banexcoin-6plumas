@@ -15,55 +15,55 @@ import {
 } from "@/components/ui/table";
 
 import type { PublicBatchDto } from "../data";
-import { formatBs, formatCount, formatUsdt } from "../lib";
+import { consoleSurface, formatBs, formatCount, formatUsdt } from "../lib";
 
 export function ExecutiveSummary({ batch }: { batch: PublicBatchDto }) {
   const rows = [
-    ["Month processed", batch.period.label, "Selected report period"],
+    ["Mes procesado", batch.period.label, "Período seleccionado del reporte"],
     [
-      "Total users",
+      "Usuarios totales",
       formatCount(batch.totals.users),
-      "Users with valid Pago QR consumption",
+      "Usuarios con consumo válido de Pago QR",
     ],
     [
-      "Total QR transactions",
+      "Total de transacciones QR",
       formatCount(batch.totals.transactions),
-      "Completed Pago QR rows only",
+      "Solo filas completadas de Pago QR",
     ],
     [
-      "Total cashback Bs",
+      "Cashback total en Bs",
       formatBs(batch.totals.cashbackBs),
-      "Finance liability in local currency",
+      "Pasivo financiero en moneda local",
     ],
     [
-      "Total cashback USDT",
+      "Cashback total en USDT",
       formatUsdt(batch.totals.cashbackUsdt),
-      "BanexTransfer payout amount",
+      "Monto de pago para BanexTransfer",
     ],
   ];
 
   return (
-    <Card className="border-white/10 bg-white/[0.06] text-white">
+    <Card className={consoleSurface}>
       <CardHeader>
-        <CardTitle className="text-white">Executive summary</CardTitle>
-        <CardDescription className="text-white/52">
-          A management view that still respects operational gates and review
-          state.
+        <CardTitle>Resumen ejecutivo</CardTitle>
+        <CardDescription>
+          Una vista gerencial que sigue respetando los controles operativos y el
+          estado de revisión.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
-            <TableRow className="border-white/10">
-              <TableHead>Metric</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Operational meaning</TableHead>
+            <TableRow>
+              <TableHead>Métrica</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Significado operativo</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map(([metric, value, meaning]) => (
-              <TableRow className="border-white/10" key={metric}>
-                <TableCell className="font-semibold text-white">
+              <TableRow key={metric}>
+                <TableCell className="font-semibold text-foreground">
                   {metric}
                 </TableCell>
                 <TableCell>{value}</TableCell>

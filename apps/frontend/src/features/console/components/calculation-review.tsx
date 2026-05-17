@@ -12,7 +12,14 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { PublicBatchDto, PublicResultDto } from "../data";
-import { brandGradient, formatOracleRate, formatUsdt } from "../lib";
+import {
+  brandGradient,
+  consoleMutedText,
+  consoleSoftSurface,
+  consoleSurface,
+  formatOracleRate,
+  formatUsdt,
+} from "../lib";
 import { ResultsTable } from "./results-table";
 
 export function CalculationReview({
@@ -26,35 +33,32 @@ export function CalculationReview({
     batch.validation.blockedRows === 0 && !batch.approval.approved;
 
   return (
-    <Card
-      className="border-white/10 bg-white/[0.06] text-white"
-      id="calculations"
-    >
+    <Card className={consoleSurface} id="calculations">
       <CardHeader>
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <CardTitle className="text-white">Calculation review</CardTitle>
-            <CardDescription className="text-white/52">
-              Finance reviews USDT liability, oracle rate, tier lock, and
-              warnings before approval.
+            <CardTitle>Revisión de cálculo</CardTitle>
+            <CardDescription>
+              Finanzas revisa el pasivo en USDT, la tasa del oráculo, el nivel
+              aplicado y las advertencias antes de aprobar.
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge tone="warning">Warnings included</Badge>
+            <Badge tone="warning">Incluye advertencias</Badge>
             <Button
               className={cn(canApprove && brandGradient)}
               disabled={!canApprove}
             >
               <ShieldCheck />
-              Approve batch
+              Aprobar lote
             </Button>
             <Button
-              className="border-white/12 bg-white/[0.06] text-white hover:bg-white/10"
+              className={cn("hover:bg-[var(--brand-soft)]", consoleSoftSurface)}
               disabled={!batch.export.ready}
               variant="outline"
             >
               <Download />
-              Export draft
+              Borrador de exportación
             </Button>
           </div>
         </div>
@@ -62,42 +66,46 @@ export function CalculationReview({
       <CardContent>
         <div className="mb-5 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-[var(--warning-orange)]/30 bg-[var(--warning-orange)]/10 p-4">
-            <p className="font-semibold text-white/45 text-xs">Payout oracle</p>
+            <p className={cn("font-semibold text-xs", consoleMutedText)}>
+              Oráculo de pago
+            </p>
             <p className="mt-2 font-bold text-xl">
               {formatOracleRate(batch.payoutOracle.rate)}
             </p>
-            <p className="mt-1 text-white/48 text-xs">
-              {batch.payoutOracle.source ?? "Oracle source pending"}
+            <p className={cn("mt-1 text-xs", consoleMutedText)}>
+              {batch.payoutOracle.source ?? "Origen del oráculo pendiente"}
             </p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-black/14 p-4">
-            <p className="font-semibold text-white/45 text-xs">
-              Cashback liability
+          <div className={cn("rounded-3xl p-4", consoleSoftSurface)}>
+            <p className={cn("font-semibold text-xs", consoleMutedText)}>
+              Pasivo de cashback
             </p>
             <p className="mt-2 font-bold text-xl">
               {formatUsdt(batch.totals.cashbackUsdt)}
             </p>
-            <p className="mt-1 text-white/48 text-xs">
-              Locked for finance review only
+            <p className={cn("mt-1 text-xs", consoleMutedText)}>
+              Bloqueado solo para revisión de finanzas
             </p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-black/14 p-4">
-            <p className="font-semibold text-white/45 text-xs">Export gate</p>
-            <p className="mt-2 font-bold text-xl">
-              {batch.export.ready ? "Ready" : "Locked"}
+          <div className={cn("rounded-3xl p-4", consoleSoftSurface)}>
+            <p className={cn("font-semibold text-xs", consoleMutedText)}>
+              Control de exportación
             </p>
-            <p className="mt-1 text-white/48 text-xs">
-              Approval and blocked-row clearance required
+            <p className="mt-2 font-bold text-xl">
+              {batch.export.ready ? "Listo" : "Bloqueado"}
+            </p>
+            <p className={cn("mt-1 text-xs", consoleMutedText)}>
+              Requiere aprobación y limpieza de filas bloqueadas
             </p>
           </div>
         </div>
         <ResultsTable results={results} />
-        <div className="mt-5 rounded-3xl border border-white/10 bg-black/14 p-4">
-          <p className="font-bold text-white">Formula trace</p>
-          <p className="mt-2 text-sm text-white/52">
-            cashbackUsdt = cashbackBs / locked payout oracle rate. Historical
-            effective rates are displayed for audit only and never replace the
-            payout oracle.
+        <div className={cn("mt-5 rounded-3xl p-4", consoleSoftSurface)}>
+          <p className="font-bold text-foreground">Traza de fórmula</p>
+          <p className={cn("mt-2 text-sm", consoleMutedText)}>
+            cashbackUsdt = cashbackBs / tasa bloqueada del oráculo de pago. Las
+            tasas efectivas históricas se muestran solo para auditoría y nunca
+            reemplazan al oráculo de pago.
           </p>
         </div>
       </CardContent>

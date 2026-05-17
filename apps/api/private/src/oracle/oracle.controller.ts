@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -8,8 +9,8 @@ import {
   ApiParam,
   ApiServiceUnavailableResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Public } from '../auth/public.decorator';
 import {
   CurrentOracleRateResponseDto,
   LockedOracleContextResponseDto,
@@ -19,7 +20,8 @@ import { ORACLE_ROUTES } from './oracle.constants';
 import { OracleService } from './oracle.service';
 
 @ApiTags('oracle')
-@Public()
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
 @Controller()
 export class OracleController {
   constructor(private readonly oracleService: OracleService) {}

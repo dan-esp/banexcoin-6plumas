@@ -16,6 +16,12 @@ export class PublicRepository {
     return this.prisma.cashbackRun.findUnique({ where: { id } })
   }
 
+  findLatestBatch() {
+    return this.prisma.cashbackRun.findFirst({
+      orderBy: { created_at: "desc" },
+    })
+  }
+
   listBatchTransactions(cashbackRunId: string, pagination: Pagination) {
     return this.prisma.transaction.findMany({
       where: { cashback_run_id: cashbackRunId },

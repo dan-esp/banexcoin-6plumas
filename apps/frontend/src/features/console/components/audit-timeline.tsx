@@ -15,36 +15,41 @@ import {
 } from "@/components/ui/table";
 
 import type { PublicBatchDto } from "../data";
-import { formatCount, formatUsdt } from "../lib";
+import {
+  consoleMutedText,
+  consoleSurface,
+  formatCount,
+  formatUsdt,
+} from "../lib";
 
 export function AuditTimeline({ batch }: { batch: PublicBatchDto }) {
   const events = [
     [
       "08:20",
-      "Upload accepted",
-      "Pago QR workbook registered for manual processing.",
+      "Carga aceptada",
+      "Workbook de Pago QR registrado para procesamiento manual.",
     ],
     [
       "08:34",
-      "Validation blocked",
-      `${batch.validation.blockedRows} rows require operator review.`,
+      "Validación bloqueada",
+      `${batch.validation.blockedRows} filas requieren revisión operativa.`,
     ],
     [
       "09:15",
-      "Oracle fetched",
-      `${batch.payoutOracle.source ?? "Oracle"} returned ${
-        batch.payoutOracle.rate ?? "pending"
+      "Oráculo consultado",
+      `${batch.payoutOracle.source ?? "Oráculo"} devolvió ${
+        batch.payoutOracle.rate ?? "pendiente"
       } BOB/USDT.`,
     ],
     [
       "09:42",
-      "Calculation reviewed",
-      "USDT payout liability prepared for finance review.",
+      "Cálculo revisado",
+      "Pasivo de pago en USDT preparado para revisión de finanzas.",
     ],
     [
-      "Pending",
-      "Finance approval",
-      "Required before BanexTransfer export generation.",
+      "Pendiente",
+      "Aprobación de finanzas",
+      "Requerida antes de generar la exportación para BanexTransfer.",
     ],
   ] as const;
 
@@ -55,9 +60,9 @@ export function AuditTimeline({ batch }: { batch: PublicBatchDto }) {
       batch.totals.users,
       batch.totals.cashbackUsdt,
     ],
-    ["2026-04", "Exported", 745, 1490.22],
-    ["2026-03", "Exported", 702, 1328.94],
-    ["2026-02", "Approved", 688, 1210.77],
+    ["2026-04", "Exportado", 745, 1490.22],
+    ["2026-03", "Exportado", 702, 1328.94],
+    ["2026-02", "Aprobado", 688, 1210.77],
   ] as const;
 
   return (
@@ -65,27 +70,28 @@ export function AuditTimeline({ batch }: { batch: PublicBatchDto }) {
       className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]"
       id="audit"
     >
-      <Card className="border-white/10 bg-white/[0.06] text-white">
+      <Card className={consoleSurface}>
         <CardHeader>
-          <CardTitle className="text-white">Batch history</CardTitle>
-          <CardDescription className="text-white/52">
-            Prior monthly batches remain scan-friendly for operations.
+          <CardTitle>Historial de lotes</CardTitle>
+          <CardDescription>
+            Los lotes mensuales anteriores siguen disponibles para consulta
+            operativa.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10">
-                <TableHead>Month</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Users</TableHead>
+              <TableRow>
+                <TableHead>Mes</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Usuarios</TableHead>
                 <TableHead>Cashback USDT</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {history.map(([month, status, users, usdt]) => (
-                <TableRow className="border-white/10" key={String(month)}>
-                  <TableCell className="font-semibold text-white">
+                <TableRow key={String(month)}>
+                  <TableCell className="font-semibold text-foreground">
                     {month}
                   </TableCell>
                   <TableCell>{status}</TableCell>
@@ -97,11 +103,11 @@ export function AuditTimeline({ batch }: { batch: PublicBatchDto }) {
           </Table>
         </CardContent>
       </Card>
-      <Card className="border-white/10 bg-white/[0.06] text-white">
+      <Card className={consoleSurface}>
         <CardHeader>
-          <CardTitle className="text-white">Audit trail</CardTitle>
-          <CardDescription className="text-white/52">
-            Every finance action leaves a reviewable trail.
+          <CardTitle>Traza de auditoría</CardTitle>
+          <CardDescription>
+            Cada acción financiera deja una traza revisable.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-5">
@@ -110,13 +116,17 @@ export function AuditTimeline({ batch }: { batch: PublicBatchDto }) {
               <div className="flex flex-col items-center">
                 <span className="size-4 rounded-full bg-[var(--warning-orange)]" />
                 {index < events.length - 1 ? (
-                  <span className="mt-2 h-full w-px bg-white/10" />
+                  <span className="mt-2 h-full w-px bg-border" />
                 ) : null}
               </div>
               <div>
-                <p className="font-semibold text-white/42 text-xs">{time}</p>
-                <p className="mt-1 font-bold text-white">{event}</p>
-                <p className="mt-1 text-sm text-white/52">{description}</p>
+                <p className={`font-semibold text-xs ${consoleMutedText}`}>
+                  {time}
+                </p>
+                <p className="mt-1 font-bold text-foreground">{event}</p>
+                <p className={`mt-1 text-sm ${consoleMutedText}`}>
+                  {description}
+                </p>
               </div>
             </div>
           ))}
