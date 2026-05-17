@@ -52,7 +52,7 @@ export class MongoBatchRepository implements IBatchRepository {
       filename: payload.filename,
       batchName: payload.batchName,
       savedAt,
-      status: 'CALCULATED',
+      status: 'calculated',
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
       mapperErrors: payload.mapperErrors as unknown as Record<string, unknown>[],

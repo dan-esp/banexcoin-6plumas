@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import { prisma } from "../db/client"
 import { PublicRepository } from "../repositories/public.repository"
-import { parsePagination, parsePositiveInt, requireObjectId } from "../shared/query"
+import { parsePagination, parsePositiveInt, requireId } from "../shared/query"
 import { mapAccount } from "../accounts/mappers"
 import { mapBatch, mapDisbursement, mapResult, mapTransaction } from "../batches/mappers"
 
@@ -67,7 +67,7 @@ legacyRoutes.get("/cashback-runs", async (c) => {
 })
 
 legacyRoutes.get("/cashback-runs/:id/disbursements", async (c) => {
-  const id = requireObjectId(c.req.param("id"), "id")
+  const id = requireId(c.req.param("id"), "id")
   const disbursements = await repository.listBatchDisbursements(id)
 
   return c.json({ data: disbursements.map(mapDisbursement) })

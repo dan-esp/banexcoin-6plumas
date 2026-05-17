@@ -19,7 +19,7 @@ export class JsonBatchRepository implements IBatchRepository {
       filename: payload.filename,
       batchName: payload.batchName,
       savedAt: new Date().toISOString(),
-      status: 'CALCULATED',
+      status: 'calculated',
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
       mapperErrors: payload.mapperErrors,

@@ -52,6 +52,20 @@ export class AnomalyService {
       return { scored: 0, anomalies: 0, skipped: true, skipReason: 'no rows' };
     }
 
+    try {
+      return await this.runScoring(batchId, rows, authToken);
+    } catch (err: unknown) {
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Anomaly pipeline failed (non-blocking): ${reason}`);
+      return { scored: 0, anomalies: 0, skipped: true, skipReason: reason };
+    }
+  }
+
+  private async runScoring(
+    batchId: string,
+    rows: QrPaymentRow[],
+    authToken?: string,
+  ): Promise<AnomalySummary> {
     const txns: AiTransaction[] = rows.map((r) => ({
       user_id: String(r.accountId),
       monto_bs: r.amountBob,
@@ -63,30 +77,29 @@ export class AnomalyService {
           : new Date(r.createdAt).toISOString(),
     }));
 
-    let predictions: AiPrediction[];
-    try {
-      const response = await fetch(`${AI_URL}/predict`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify({ rows: txns }),
-        signal: AbortSignal.timeout(AI_TIMEOUT_MS),
-      });
+    const response = await fetch(`${AI_URL}/predict`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: JSON.stringify({ rows: txns }),
+      signal: AbortSignal.timeout(AI_TIMEOUT_MS),
+    });
 
-      if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        const reason = `AI /predict HTTP ${response.status}: ${body.slice(0, 200)}`;
-        this.logger.warn(reason);
-        return { scored: 0, anomalies: 0, skipped: true, skipReason: reason };
-      }
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      const reason = `AI /predict HTTP ${response.status}: ${body.slice(0, 200)}`;
+      this.logger.warn(reason);
+      return { scored: 0, anomalies: 0, skipped: true, skipReason: reason };
+    }
 
-      const data = (await response.json()) as AiPredictResponse;
-      predictions = data.predictions ?? [];
-    } catch (err: unknown) {
-      const reason = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`AI predict failed: ${reason}`);
+    const data = (await response.json()) as AiPredictResponse;
+    const predictions: AiPrediction[] = data.predictions ?? [];
+
+    if (predictions.length === 0) {
+      const reason = 'AI returned empty predictions (model may not be trained yet)';
+      this.logger.warn(reason);
       return { scored: 0, anomalies: 0, skipped: true, skipReason: reason };
     }
 

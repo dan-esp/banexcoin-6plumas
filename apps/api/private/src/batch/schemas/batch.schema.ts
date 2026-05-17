@@ -4,16 +4,12 @@ import { HydratedDocument } from 'mongoose';
 export type BatchDocument = HydratedDocument<Batch>;
 
 export type BatchStatus =
-  | 'UPLOADED'
-  | 'VALIDATING'
-  | 'VALIDATED'
-  | 'CALCULATING'
-  | 'CALCULATED'
-  | 'FX_LOCKED'
-  | 'UNDER_REVIEW'
-  | 'APPROVED'
-  | 'EXPORTED'
-  | 'FAILED';
+  | 'uploaded'
+  | 'validated'
+  | 'calculated'
+  | 'fx_locked'
+  | 'approved'
+  | 'exported';
 
 @Schema({ collection: 'batches', timestamps: false })
 export class Batch {
