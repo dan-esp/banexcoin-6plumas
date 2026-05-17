@@ -7,6 +7,7 @@ import { ProcessingService } from '../processing/processing.service.js';
 import { CalculateRequestDto } from '../processing/dto/calculate-request.dto.js';
 import { TierLevelDto } from '../processing/dto/tier-level.dto.js';
 import { OracleService } from './oracle.service.js';
+import { AnomalyService, AnomalySummary } from '../anomaly/anomaly.service.js';
 import type {
   IBatchRepository,
   BatchSavePayload,
@@ -39,6 +40,7 @@ export interface ProcessBatchResult {
   usersNotQualifying: number;
   results: unknown[];
   banexTransferLines: unknown[];
+  anomalies: AnomalySummary;
 }
 
 @Injectable()
@@ -50,11 +52,13 @@ export class BatchProcessService {
     private readonly oracleService: OracleService,
     @Inject('BATCH_REPOSITORY')
     private readonly batchRepository: IBatchRepository,
+    private readonly anomalyService: AnomalyService,
   ) {}
 
   async process(
     file: Express.Multer.File,
     dto: ProcessBatchDto,
+    authToken?: string,
   ): Promise<ProcessBatchResult> {
     // Resolve payout FX rate: live oracle → request override → fixed fallback
     const oracleCtx = await this.oracleService.resolveRate(dto.outputFxRate);
@@ -89,6 +93,12 @@ export class BatchProcessService {
 
     const batchId = await this.batchRepository.save(payload);
 
+    const anomalies = await this.anomalyService.scoreAndPersist(
+      batchId,
+      rows,
+      authToken,
+    );
+
     return {
       batchId,
       batchName: dto.batchName,
@@ -108,6 +118,7 @@ export class BatchProcessService {
       usersNotQualifying: report.usersNotQualifying,
       results: report.results,
       banexTransferLines: report.banexTransferLines,
+      anomalies,
     };
   }
 }

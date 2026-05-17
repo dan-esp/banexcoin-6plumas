@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EtlModule } from '../etl/etl.module.js';
 import { ProcessingModule } from '../processing/processing.module.js';
+import { AnomalyModule } from '../anomaly/anomaly.module.js';
 import { BatchController } from './batch.controller.js';
 import { BatchProcessService } from './batch-process.service.js';
 import { OracleService } from './oracle.service.js';
@@ -17,6 +18,7 @@ const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
   imports: [
     EtlModule,
     ProcessingModule,
+    AnomalyModule,
     ...(isMongoDb
       ? [
           MongooseModule.forFeature([

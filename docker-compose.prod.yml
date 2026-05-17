@@ -15,17 +15,16 @@ services:
     image: mongo:8
     container_name: banexcoin.prod.mongo
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?MONGO_USER required}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD required}
-      MONGO_INITDB_DATABASE: banexcoin
-    ports:
-      - '${MONGO_HOST_PORT:-27017}:27017'
+    # Single-node replica set, idempotent self-init. Mongo stays on the
+    # internal `banexcoin-prod` network only — do not expose the port unless
+    # you wrap it in TLS + auth (a keyfile is required for auth + replSet).
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongo-data:/data/db
     networks: [banexcoin-prod]
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      test: |
+        mongosh --quiet --eval "try { if (rs.status().ok) quit(0) } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}); quit(0) }"
       interval: 10s
       timeout: 5s
       retries: 10
@@ -69,8 +68,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/banexcoin?authSource=admin
-      AI_SERVICE_URL: http://ai:8080
+      STORAGE_ADAPTER: mongodb
+      MONGODB_URI: mongodb://mongo:27017/banexcoin?replicaSet=rs0&directConnection=true
+      AI_API_URL: http://ai:8080
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY required}
       CLERK_AUTHORIZED_PARTIES: ${CLERK_AUTHORIZED_PARTIES:-}
       PAYOUT_ORACLE_PROVIDER_URL: ${PAYOUT_ORACLE_PROVIDER_URL:?PAYOUT_ORACLE_PROVIDER_URL required}
@@ -81,8 +81,6 @@ services:
       PAYOUT_ORACLE_FRESHNESS_MINUTES: ${PAYOUT_ORACLE_FRESHNESS_MINUTES:-60}
       PAYOUT_ORACLE_MIN_RATE: ${PAYOUT_ORACLE_MIN_RATE:-1}
       PAYOUT_ORACLE_MAX_RATE: ${PAYOUT_ORACLE_MAX_RATE:-20}
-      RUN_MIGRATIONS: ${PRIVATE_API_RUN_MIGRATIONS:-false}
-      MIGRATION_COMMAND: ${PRIVATE_API_MIGRATION_COMMAND:-}
     ports:
       - '${PRIVATE_API_HOST_PORT:-4000}:8080'
     depends_on:
@@ -108,12 +106,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/banexcoin?authSource=admin
-      PRIVATE_API_URL: http://private-api:8080
+      MONGODB_URI: mongodb://mongo:27017/banexcoin?replicaSet=rs0&directConnection=true
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY required}
       CLERK_AUTHORIZED_PARTIES: ${CLERK_AUTHORIZED_PARTIES:-}
-      RUN_MIGRATIONS: ${PUBLIC_API_RUN_MIGRATIONS:-false}
-      MIGRATION_COMMAND: ${PUBLIC_API_MIGRATION_COMMAND:-}
     ports:
       - '${PUBLIC_API_HOST_PORT:-5000}:8080'
     depends_on:
@@ -149,8 +144,6 @@ services:
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY required}
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:?NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY required}
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL:-/sign-in}
-      RUN_MIGRATIONS: ${FRONTEND_RUN_MIGRATIONS:-false}
-      MIGRATION_COMMAND: ${FRONTEND_MIGRATION_COMMAND:-}
     ports:
       - '${FRONTEND_HOST_PORT:-3000}:8080'
     depends_on:

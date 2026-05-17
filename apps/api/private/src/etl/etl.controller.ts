@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiConsumes,
@@ -19,6 +20,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { EntityType } from '../common/enums/entity-type.enum.js';
 import { EtlService } from './etl.service.js';
@@ -31,6 +33,8 @@ const FILE_INTERCEPTOR = FileInterceptor('file', {
 });
 
 @ApiTags('ETL — Carga de archivos QR')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
 @Controller('etl')
 export class EtlController {
   constructor(private readonly etlService: EtlService) {}

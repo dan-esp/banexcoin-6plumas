@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { EtlModule } from './etl/etl.module.js';
 import { OracleModule } from './oracle/oracle.module.js';
 import { ProcessingModule } from './processing/processing.module.js';
+import { AnomalyModule } from './anomaly/anomaly.module.js';
 
 const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
 
@@ -15,6 +16,7 @@ const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
     EtlModule,
     ProcessingModule,
     ...(isMongoDb ? [DatabaseModule, OracleModule] : []),
+    AnomalyModule,
     BatchModule,
   ],
   controllers: [AppController],

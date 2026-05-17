@@ -1,12 +1,15 @@
+import { auth } from "@clerk/nextjs/server";
+
 import { fixtureBatch, fixtureDisbursements, fixtureResults } from "./fixtures";
 import type {
   ConsoleDataState,
+  PublicAnomalyDto,
   PublicBatchDto,
   PublicDisbursementDto,
   PublicResultDto,
 } from "./types";
 
-async function fetchJson<T>(path: string): Promise<T> {
+async function fetchJson<T>(path: string, token: string): Promise<T> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!baseUrl) {
@@ -14,7 +17,10 @@ async function fetchJson<T>(path: string): Promise<T> {
   }
 
   const response = await fetch(`${baseUrl}${path}`, {
-    next: { revalidate: 30 },
+    cache: "no-store",
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
@@ -25,9 +31,24 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 export async function getConsoleData(): Promise<ConsoleDataState> {
+  const { getToken } = await auth();
+  const token = await getToken();
+
+  if (!token) {
+    return {
+      batch: fixtureBatch,
+      results: fixtureResults,
+      disbursements: fixtureDisbursements,
+      anomalies: [],
+      source: "fixture",
+      error: "Sign in to load live data from the public API.",
+    };
+  }
+
   try {
     const batches = await fetchJson<{ data: PublicBatchDto[] }>(
       "/v1/batches?limit=1",
+      token,
     );
     const batch = batches.data.at(0);
 
@@ -36,22 +57,32 @@ export async function getConsoleData(): Promise<ConsoleDataState> {
         batch: fixtureBatch,
         results: [],
         disbursements: [],
+        anomalies: [],
         source: "api",
         error: "No monthly batches were returned by the public API.",
       };
     }
 
-    const [results, disbursements] = await Promise.all([
-      fetchJson<{ data: PublicResultDto[] }>(`/v1/batches/${batch.id}/results`),
+    const [results, disbursements, anomalies] = await Promise.all([
+      fetchJson<{ data: PublicResultDto[] }>(
+        `/v1/batches/${batch.id}/results`,
+        token,
+      ),
       fetchJson<{ data: PublicDisbursementDto[] }>(
         `/v1/batches/${batch.id}/disbursements`,
+        token,
       ),
+      fetchJson<{ data: PublicAnomalyDto[] }>(
+        `/v1/anomalies?batchId=${batch.id}&status=open&limit=200`,
+        token,
+      ).catch(() => ({ data: [] as PublicAnomalyDto[] })),
     ]);
 
     return {
       batch,
       results: results.data,
       disbursements: disbursements.data,
+      anomalies: anomalies.data,
       source: "api",
       error: null,
     };
@@ -60,6 +91,7 @@ export async function getConsoleData(): Promise<ConsoleDataState> {
       batch: fixtureBatch,
       results: fixtureResults,
       disbursements: fixtureDisbursements,
+      anomalies: [],
       source: "fixture",
       error: error instanceof Error ? error.message : "Public API unavailable",
     };

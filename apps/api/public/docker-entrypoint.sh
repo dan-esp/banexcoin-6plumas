@@ -1,15 +1,10 @@
 #!/bin/sh
 set -e
 
-if [ "${RUN_MIGRATIONS:-false}" = "true" ] || [ "${RUN_MIGRATIONS:-false}" = "1" ]; then
-  echo "Running public API database migration hook..."
-  if [ -n "${MIGRATION_COMMAND:-}" ]; then
-    sh -c "$MIGRATION_COMMAND"
-  else
-    bun run migrate:deploy
-  fi
-else
-  echo "Skipping public API database migrations."
-fi
+# Public API owns the Mongo schema (Prisma datasource: MONGODB_URI).
+# `prisma db push` is the MongoDB-equivalent of migrate deploy — it syncs
+# indexes and embedded shape declarations. Idempotent and safe to run on every boot.
+echo "Syncing MongoDB schema with prisma db push..."
+bun run migrate:deploy
 
 exec "$@"

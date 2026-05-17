@@ -2,22 +2,24 @@ services:
   mongo:
     image: mongo:8
     container_name: banexcoin.mongo
+    # Single-node replica set. Prisma's MongoDB connector requires replSet for
+    # transactions; using replSet here makes dev match prod.
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
       - '27017:27017'
     networks:
       - banexcoin-network
-
-  ai:
-    build:
-      context: ./apps/api/ai
-      dockerfile: Dockerfile
-    container_name: banexcoin.ai
-    ports:
-      - '8081:8080'
     volumes:
-      - ./.containers/ai-data:/app/data
-    networks:
-      - banexcoin-network
+      - ./.containers/mongo-data:/data/db
+    healthcheck:
+      # Idempotent self-init: first boot runs rs.initiate(); subsequent boots
+      # confirm rs is up. No external mongosh commands required.
+      test: |
+        mongosh --quiet --eval "try { if (rs.status().ok) quit(0) } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}); quit(0) }"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 networks:
   banexcoin-network:

@@ -9,7 +9,7 @@
     "down": "docker compose down",
     "dev:web": "pnpm -F=frontend dev",
     "dev:private": "pnpm -F=private start:dev",
-    "dev:public": "bun --cwd apps/api/public run dev",
+    "dev:public": "bun run --cwd ./apps/api/public dev",
     "dev:ai": "uv --directory apps/api/ai run uvicorn src.main:app --reload --port 8081",
     "build": "pnpm --parallel build",
     "lint": "pnpm --parallel lint",
