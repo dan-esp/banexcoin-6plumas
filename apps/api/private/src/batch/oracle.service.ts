@@ -19,7 +19,7 @@ export interface OracleContext {
 }
 
 const ORACLE_URL =
-  process.env.ORACLE_URL ?? 'http://localhost:4001/oracle/current';
+  process.env.ORACLE_URL ?? 'http://localhost:4000/oracle/current';
 
 /** Fixed fallback rate used when the oracle is unreachable and no override is provided. */
 const ORACLE_FALLBACK_RATE = parseFloat(
