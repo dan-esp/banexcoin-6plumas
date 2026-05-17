@@ -42,7 +42,8 @@ async function bootstrap() {
     },
   });
 
-  const port = process.env.PORT ?? 3000;
+  /** Match monorepo docs / .env.example (frontend PRIVATE_API_URL uses :4000). */
+  const port = process.env.PORT ?? 4000;
   await app.listen(port);
   console.log(`Application running on: http://localhost:${port}/api/v1`);
   console.log(`Swagger UI available at: http://localhost:${port}/api/docs`);

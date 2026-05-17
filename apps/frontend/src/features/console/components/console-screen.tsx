@@ -11,8 +11,7 @@ import { ExportActionCard } from "./export-action-card";
 import { KpiCard } from "./kpi-card";
 import { ErrorState } from "./states";
 import { TierDistribution } from "./tier-distribution";
-import { UploadPanel } from "./upload-panel";
-import { ValidationBanner } from "./validation-banner";
+import { UploadFlow } from "./upload-flow";
 import { WorkflowStepper } from "./workflow-stepper";
 
 export function ConsoleScreen({
@@ -58,8 +57,7 @@ export function ConsoleScreen({
       </section>
 
       <ExecutiveSummary batch={batch} />
-      <UploadPanel batch={batch} />
-      <ValidationBanner batch={batch} />
+      <UploadFlow batch={batch} />
       <CalculationReview batch={batch} results={results} />
       <ExportActionCard batch={batch} disbursements={disbursements} />
       <AuditTimeline batch={batch} />

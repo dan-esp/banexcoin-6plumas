@@ -3,12 +3,37 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import type {
-  IBatchRepository,
   BatchSavePayload,
+  IBatchRepository,
 } from '../interfaces/batch-repository.interface.js';
 import { Batch, BatchDocument } from '../schemas/batch.schema.js';
 import { QrTransaction, QrTransactionDocument } from '../schemas/qr-transaction.schema.js';
 import { CashbackResult, CashbackResultDocument } from '../schemas/cashback-result.schema.js';
+
+function toBatchOracleDocument(
+  ctx: BatchSavePayload['oracleContext'],
+): Batch['oracle'] {
+  let fetchedAtIso: string;
+  if (ctx.fetchedAt instanceof Date) {
+    fetchedAtIso = ctx.fetchedAt.toISOString();
+  } else if (typeof ctx.fetchedAt === 'string') {
+    fetchedAtIso = ctx.fetchedAt;
+  } else {
+    fetchedAtIso = new Date().toISOString();
+  }
+
+  return {
+    rate: ctx.rate ?? 0,
+    source: ctx.source ?? '',
+    fetchedAt: fetchedAtIso,
+    mode: ctx.mode,
+    status: ctx.status,
+    usedFallback: ctx.usedFallback,
+    ...(ctx.fallbackReason !== undefined
+      ? { fallbackReason: ctx.fallbackReason }
+      : {}),
+  };
+}
 
 @Injectable()
 export class MongoBatchRepository implements IBatchRepository {
@@ -31,7 +56,7 @@ export class MongoBatchRepository implements IBatchRepository {
       rowsLoaded: payload.rowsLoaded,
       skipped: payload.skipped,
       mapperErrors: payload.mapperErrors as unknown as Record<string, unknown>[],
-      oracle: payload.oracleContext,
+      oracle: toBatchOracleDocument(payload.oracleContext),
     });
 
     if (payload.rows.length > 0) {

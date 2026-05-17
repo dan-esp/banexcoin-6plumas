@@ -5,16 +5,25 @@ import { OracleController } from './oracle.controller';
 import { OracleService } from './oracle.service';
 import { OracleValidator } from './oracle.validator';
 import { BatchOracleRepository } from './repositories/batch-oracle.repository';
+import { StubBatchOracleRepository } from './repositories/stub-batch-oracle.repository';
 import { HttpJsonOracleProvider } from './strategies/http-json-oracle.provider';
 import { ManualOracleProvider } from './strategies/manual-oracle.provider';
 
+const isMongoDb = process.env.STORAGE_ADAPTER === 'mongodb';
+
+const oraclePersistenceImports = isMongoDb
+  ? [MongooseModule.forFeature([{ name: Batch.name, schema: BatchSchema }])]
+  : [];
+
+const batchOracleRepositoryProvider = isMongoDb
+  ? BatchOracleRepository
+  : { provide: BatchOracleRepository, useClass: StubBatchOracleRepository };
+
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Batch.name, schema: BatchSchema }]),
-  ],
+  imports: [...oraclePersistenceImports],
   controllers: [OracleController],
   providers: [
-    BatchOracleRepository,
+    batchOracleRepositoryProvider,
     HttpJsonOracleProvider,
     ManualOracleProvider,
     OracleService,
