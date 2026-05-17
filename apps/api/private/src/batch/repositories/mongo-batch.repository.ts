@@ -48,6 +48,31 @@ function toBatchOracleDocument(
   };
 }
 
+function toBatchOracleDocument(
+  ctx: BatchSavePayload['oracleContext'],
+): Batch['oracle'] {
+  let fetchedAtIso: string;
+  if (ctx.fetchedAt instanceof Date) {
+    fetchedAtIso = ctx.fetchedAt.toISOString();
+  } else if (typeof ctx.fetchedAt === 'string') {
+    fetchedAtIso = ctx.fetchedAt;
+  } else {
+    fetchedAtIso = new Date().toISOString();
+  }
+
+  return {
+    rate: ctx.rate ?? 0,
+    source: ctx.source ?? '',
+    fetchedAt: fetchedAtIso,
+    mode: ctx.mode,
+    status: ctx.status,
+    usedFallback: ctx.usedFallback,
+    ...(ctx.fallbackReason !== undefined
+      ? { fallbackReason: ctx.fallbackReason }
+      : {}),
+  };
+}
+
 @Injectable()
 export class MongoBatchRepository implements IBatchRepository {
   constructor(
