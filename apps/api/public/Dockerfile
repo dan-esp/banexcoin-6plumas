@@ -18,13 +18,11 @@ WORKDIR /app
 RUN apk add --no-cache curl \
  && addgroup --system --gid 1001 bunjs \
  && adduser --system --uid 1001 --ingroup bunjs bun-app
-COPY --from=builder --chown=bun-app:bunjs /app/dist                         ./dist
-COPY --from=builder --chown=bun-app:bunjs /app/node_modules/.prisma         ./node_modules/.prisma
-COPY --from=builder --chown=bun-app:bunjs /app/node_modules/@prisma         ./node_modules/@prisma
-COPY --from=builder --chown=bun-app:bunjs /app/node_modules/prisma          ./node_modules/prisma
-COPY --from=builder --chown=bun-app:bunjs /app/node_modules/.bin            ./node_modules/.bin
-COPY --from=builder --chown=bun-app:bunjs /app/prisma                       ./prisma
-COPY --from=builder --chown=bun-app:bunjs /app/package.json                 ./package.json
+COPY --from=deps    --chown=bun-app:bunjs /app/node_modules         ./node_modules
+COPY --from=builder --chown=bun-app:bunjs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=bun-app:bunjs /app/dist                 ./dist
+COPY --from=builder --chown=bun-app:bunjs /app/prisma               ./prisma
+COPY --from=builder --chown=bun-app:bunjs /app/package.json         ./package.json
 COPY --chown=bun-app:bunjs docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 USER bun-app

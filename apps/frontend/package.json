@@ -6,8 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "migrate": "node -e \"console.log('No frontend migrations configured')\"",
-    "migrate:deploy": "npm run migrate --if-present",
     "lint": "biome check",
     "format": "biome format --write"
   },
