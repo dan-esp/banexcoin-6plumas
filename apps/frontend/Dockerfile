@@ -1,9 +1,13 @@
 FROM node:lts-alpine AS base
+ARG PNPM_VERSION=10.33.2
 
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile && pnpm approve-builds
+# Docker builds must stay non-interactive; do not run local build-script approval flows here.
+RUN corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
@@ -11,10 +15,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_BASE_URL
+ARG NEXT_PUBLIC_AI_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
-RUN corepack enable pnpm && pnpm run build
+ENV NEXT_PUBLIC_AI_URL=$NEXT_PUBLIC_AI_URL
+RUN corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm run build
 
 FROM base AS runner
 WORKDIR /app

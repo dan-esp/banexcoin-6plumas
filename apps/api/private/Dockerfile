@@ -1,20 +1,30 @@
 FROM node:lts-alpine AS base
+ARG PNPM_VERSION=10.33.2
 
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile && pnpm approve-builds
+# Docker builds must stay non-interactive; do not run local build-script approval flows here.
+RUN corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN corepack enable pnpm && pnpm run build
+RUN corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm run build
 
 FROM base AS pruned
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile --prod
+# The runtime image only needs production dependencies; skip package scripts here
+# to avoid pnpm build-policy prompts for packages like @nestjs/core.
+RUN corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm install --frozen-lockfile --prod --ignore-scripts
 
 FROM base AS runner
 WORKDIR /app

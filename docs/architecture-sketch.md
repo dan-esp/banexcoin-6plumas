@@ -1,6 +1,10 @@
 # Boceto de arquitectura — BanexReintegra
 
-> Mapa lógico del sistema, módulos y pipeline. Complementa
+> Documento de referencia, no fuente canónica de verdad de producto o reglas vigentes. La verdad
+> actual vive en `constitution/` y `specs/feature/`. Este archivo conserva el mapa lógico,
+> hipótesis arquitectónicas y notas extendidas que respaldan esas decisiones.
+>
+> Complementa
 > [`tech-notes.md`](./tech-notes.md) (problema),
 > [`deep-investigation.md`](./deep-investigation.md) (regulación) y
 > [`teoric-references.md`](./teoric-references.md) (modelo financiero).
@@ -141,4 +145,5 @@ Marca como `is_anomaly` las transacciones con `decision_function < 0` (etiqueta 
 estimador). Los 12 montos > 5,000 Bs detectados en el dataset deberían aparecer entre las top
 anomalías como verificación de cordura.
 
-Contrato HTTP del servicio: ver [`apps/api/ai/README.md`](../apps/api/ai/README.md).
+Contrato HTTP del servicio: ver [`../CLAUDE.md`](../CLAUDE.md) y el código en
+[`apps/api/ai/src/main.py`](../apps/api/ai/src/main.py).

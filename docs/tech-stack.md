@@ -19,7 +19,7 @@
                                               │  (uv + sk)   │
                                               └──────────────┘
 
-Postgres x2 · Redis · Docker Hub · Dokploy · GitHub Actions
+Postgres x2 · Docker Hub · Dokploy · GitHub Actions
 ```
 
 ## 2. Servicios
@@ -45,6 +45,7 @@ Postgres x2 · Redis · Docker Hub · Dokploy · GitHub Actions
 | Lenguaje         | TypeScript ^5.7                                                     |
 | Runtime          | Node LTS                                                            |
 | Framework        | **NestJS 11** sobre Express (`@nestjs/platform-express`)            |
+| ODM              | **Mongoose 8** vía `@nestjs/mongoose` (`MongooseModule.forRoot`)    |
 | RxJS             | 7.8                                                                 |
 | Lint + format    | **ESLint 9** (typescript-eslint, type-checked) + **Prettier 3**     |
 | Package manager  | pnpm 10.33 (workspace)                                              |
@@ -55,16 +56,17 @@ Postgres x2 · Redis · Docker Hub · Dokploy · GitHub Actions
 
 ### 2.3 `apps/api/public` — Hono on Bun
 
-| Categoría        | Tecnología                                          |
-| ---------------- | --------------------------------------------------- |
-| Lenguaje         | TypeScript                                          |
-| Runtime          | **Bun 1.x**                                         |
-| Framework        | **Hono 4.12**                                       |
-| Tipos            | `@types/bun`                                        |
-| Package manager  | Bun (no pnpm; fuera del workspace pnpm)             |
-| Build            | `bun build` → `dist/index.js` minificado            |
-| Imagen Docker    | `oven/bun:1-alpine`, user `bun-app:1001`            |
-| Dev port         | 3000 (`pnpm dev:public`)                            |
+| Categoría        | Tecnología                                                   |
+| ---------------- | ------------------------------------------------------------ |
+| Lenguaje         | TypeScript                                                   |
+| Runtime          | **Bun 1.x**                                                  |
+| Framework        | **Hono 4.12**                                                |
+| ORM              | **Prisma 6** (provider `mongodb`) — `prisma/schema.prisma`   |
+| Tipos            | `@types/bun`                                                 |
+| Package manager  | Bun (no pnpm; fuera del workspace pnpm)                      |
+| Build            | `bunx prisma generate` → `bun build` → `dist/index.js`       |
+| Imagen Docker    | `oven/bun:1-alpine`, user `bun-app:1001`                     |
+| Dev port         | 3000 (`pnpm dev:public`)                                     |
 
 ### 2.4 `apps/api/ai` — FastAPI + IsolationForest
 
@@ -100,16 +102,15 @@ Postgres x2 · Redis · Docker Hub · Dokploy · GitHub Actions
 
 ## 3. Infraestructura (Docker Compose)
 
-| Servicio              | Imagen           | Puerto host  | Propósito                                |
-| --------------------- | ---------------- | ------------ | ---------------------------------------- |
-| `redis`               | `redis:8.2`      | 6379         | Cache / sesiones                         |
-| `private-database`    | `postgres:17`    | 5440         | DB del servicio privado (ETL + cashback) |
-| `public-database`     | `postgres:17`    | 5441         | DB del servicio público                  |
-| `ai`                  | build local      | 8081 → 8080  | Servicio AI (volumen `.containers/ai-data:/app/data`) |
+| Servicio  | Imagen      | Puerto host | Propósito                                                |
+| --------- | ----------- | ----------- | -------------------------------------------------------- |
+| `mongo`   | `mongo:8`   | 27017       | Base de datos única — private-api (Mongoose) + public-api (Prisma) |
+| `ai`      | build local | 8081 → 8080 | Servicio AI (volumen `.containers/ai-data:/app/data`)    |
 
-Override de dev (`docker-compose.override.yml`) inyecta credenciales por defecto
-(`POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`) y monta los volúmenes en
-`.containers/`.
+Una sola instancia MongoDB sirve a ambos APIs. `private-api` escribe vía Mongoose;
+`public-api` lee vía Prisma Client (MongoDB provider).
+
+Override de dev (`docker-compose.override.yml`) monta el volumen en `.containers/mongo-data/`.
 
 ## 4. CI/CD
 
@@ -121,7 +122,7 @@ Override de dev (`docker-compose.override.yml`) inyecta credenciales por defecto
 | Build & push           | `docker/setup-buildx-action@v3` + `docker/build-push-action@v6` (linux/amd64, cache Docker Hub) |
 | Releases               | **semantic-release** (`cycjimmy/semantic-release-action@v6`) + `conventionalcommits` |
 | Registry               | Docker Hub (`${DOCKERHUB_USERNAME}/banexcoin-<service>`)        |
-| Deploy                 | **Dokploy** (webhooks por servicio, prod + test)                |
+| Deploy                 | **Dokploy** (webhooks por servicio)                             |
 | Dependencias auto      | **Dependabot** (npm / pip / docker / github-actions)            |
 
 ### Pipelines
@@ -131,7 +132,7 @@ Override de dev (`docker-compose.override.yml`) inyecta credenciales por defecto
 | `check_branch.yml`        | PR a `main`      | Valida nombre de rama (conventional prefixes)                       |
 | `check_pull_request.yml`  | PR a `main`      | Valida título de PR + mensajes de commit (conventional commits)     |
 | `check_push.yml`          | PR a `main`      | Matriz: build de cada Dockerfile cambiado, warm cache               |
-| `release.yml`             | push a `main`    | semantic-release → build & push `:stable`/`:test`/`:<ver>` → Dokploy |
+| `release.yml`             | push a `main`    | semantic-release → build & push `:stable`/`:<ver>` → Dokploy        |
 
 ## 5. Tooling & developer experience
 

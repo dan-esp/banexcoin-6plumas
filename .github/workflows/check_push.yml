@@ -66,7 +66,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Check & Warm Cache (prod)
+      - name: Build Check & Warm Cache
         if: steps.check_skip.outputs.should_run == 'true'
         uses: docker/build-push-action@v6
         with:
@@ -76,14 +76,3 @@ jobs:
           platforms: linux/amd64
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache,mode=max
-
-      - name: Build Check & Warm Cache (test)
-        if: steps.check_skip.outputs.should_run == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.service.context }}
-          file: ${{ matrix.service.file }}
-          push: false
-          platforms: linux/amd64
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test,mode=max

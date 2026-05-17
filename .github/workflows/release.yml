@@ -62,25 +62,21 @@ jobs:
             context: './apps/frontend'
             file: './apps/frontend/Dockerfile'
             webhooks_prod: []
-            webhooks_test: []
           - id: 'private'
             name: 'private-api'
             context: './apps/api/private'
             file: './apps/api/private/Dockerfile'
             webhooks_prod: []
-            webhooks_test: []
           - id: 'public'
             name: 'public-api'
             context: './apps/api/public'
             file: './apps/api/public/Dockerfile'
             webhooks_prod: []
-            webhooks_test: []
           - id: 'ai'
             name: 'ai-api'
             context: './apps/api/ai'
             file: './apps/api/ai/Dockerfile'
             webhooks_prod: []
-            webhooks_test: []
 
     steps:
       - name: Check if service should run
@@ -106,7 +102,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # ── PROD ───────────────────────────────────────────────────────────
       - name: Build and Push Image (prod)
         if: steps.check_skip.outputs.should_run == 'true'
         uses: docker/build-push-action@v6
@@ -116,7 +111,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }}
+            NEXT_PUBLIC_AI_URL=${{ secrets.NEXT_PUBLIC_AI_URL }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:stable
             ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:${{ needs.release.outputs.new_tag }}
@@ -137,41 +132,6 @@ jobs:
 
           for hook in $WEBHOOKS; do
             echo "[prod] notifying Dokploy: banexcoin-${{ matrix.service.name }} (webhook: $hook)..."
-            curl -L -X GET --fail-with-body "$DOKPLOY_URL/api/deploy/$hook"
-            echo
-          done
-
-      # ── TEST ───────────────────────────────────────────────────────────
-      - name: Build and Push Image (test)
-        if: steps.check_skip.outputs.should_run == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.service.context }}
-          file: ${{ matrix.service.file }}
-          push: true
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_TEST_API_URL }}
-            NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_TEST_BASE_URL }}
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:test
-            ${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:${{ needs.release.outputs.new_tag }}-test
-          platforms: linux/amd64
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/banexcoin-${{ matrix.service.name }}:buildcache-test,mode=max
-
-      - name: Trigger Dokploy Deployments (test)
-        if: steps.check_skip.outputs.should_run == 'true'
-        env:
-          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
-          WEBHOOKS: ${{ join(matrix.service.webhooks_test, ' ') }}
-        run: |
-          if [ -z "$WEBHOOKS" ]; then
-            echo "no test webhooks for banexcoin-${{ matrix.service.name }}"
-            exit 0
-          fi
-
-          for hook in $WEBHOOKS; do
-            echo "[test] notifying Dokploy: banexcoin-${{ matrix.service.name }} (webhook: $hook)..."
             curl -L -X GET --fail-with-body "$DOKPLOY_URL/api/deploy/$hook"
             echo
           done

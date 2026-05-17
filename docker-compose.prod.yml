@@ -1,0 +1,153 @@
+# Production-like compose. Build + run everything locally to validate before push.
+#
+#   pnpm prod:up        # build + start (detached)
+#   pnpm prod:logs      # tail all services
+#   pnpm prod:down      # stop + remove
+#   pnpm prod:nuke      # stop + remove + drop volumes
+#
+# Requires .env.prod at repo root (see .env.prod.example).
+
+name: banexcoin-prod
+
+services:
+  # ── Infra ───────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:8
+    container_name: banexcoin.prod.mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?MONGO_USER required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD required}
+      MONGO_INITDB_DATABASE: banexcoin
+    ports:
+      - '${MONGO_HOST_PORT:-27017}:27017'
+    volumes:
+      - mongo-data:/data/db
+    networks: [banexcoin-prod]
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ── Apps ────────────────────────────────────────────────────────────────
+  ai:
+    build:
+      context: ./apps/api/ai
+      dockerfile: Dockerfile
+    image: banexcoin/ai-api:local
+    container_name: banexcoin.prod.ai
+    restart: unless-stopped
+    environment:
+      AI_PORT: 8080
+      AI_MODEL_PATH: /app/data/model.joblib
+      AI_CONTAMINATION: ${AI_CONTAMINATION:-auto}
+      AI_N_ESTIMATORS: ${AI_N_ESTIMATORS:-200}
+      AI_RANDOM_STATE: ${AI_RANDOM_STATE:-42}
+    ports:
+      - '${AI_HOST_PORT:-8081}:8080'
+    volumes:
+      - ai-data:/app/data
+    networks: [banexcoin-prod]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  private-api:
+    build:
+      context: ./apps/api/private
+      dockerfile: Dockerfile
+    image: banexcoin/private-api:local
+    container_name: banexcoin.prod.private-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/banexcoin?authSource=admin
+      AI_SERVICE_URL: http://ai:8080
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      JWT_ISSUER: ${JWT_ISSUER:-banexcoin}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-banexcoin-internal}
+    ports:
+      - '${PRIVATE_API_HOST_PORT:-4000}:8080'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    networks: [banexcoin-prod]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  public-api:
+    build:
+      context: ./apps/api/public
+      dockerfile: Dockerfile
+    image: banexcoin/public-api:local
+    container_name: banexcoin.prod.public-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/banexcoin?authSource=admin
+      PRIVATE_API_URL: http://private-api:8080
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - '${PUBLIC_API_HOST_PORT:-5000}:8080'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      private-api:
+        condition: service_started
+    networks: [banexcoin-prod]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL required}
+        NEXT_PUBLIC_AI_URL: ${NEXT_PUBLIC_AI_URL:?NEXT_PUBLIC_AI_URL required}
+    image: banexcoin/web-client:local
+    container_name: banexcoin.prod.frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      HOSTNAME: 0.0.0.0
+      API_URL: http://public-api:8080
+    ports:
+      - '${FRONTEND_HOST_PORT:-3000}:8080'
+    depends_on:
+      public-api:
+        condition: service_started
+    networks: [banexcoin-prod]
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  banexcoin-prod:
+    name: banexcoin-prod
+    driver: bridge
+
+volumes:
+  mongo-data:
+  ai-data:
