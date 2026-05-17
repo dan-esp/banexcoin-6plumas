@@ -1,27 +1,10 @@
 import { Controller, Get, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AppService } from './app.service';
 import type { RequestWithClerkAuth } from './auth/clerk-auth.guard';
-import { Public } from './auth/public.decorator';
 
 @ApiTags('health', 'auth')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
-  @Public()
-  @Get()
-  @ApiOkResponse({
-    description: 'Private API liveness response.',
-    schema: {
-      type: 'string',
-      example: 'Hello World!',
-    },
-  })
-  getHello(): string {
-    return this.appService.getHello();
-  }
-
   @Get('auth/session')
   @ApiBearerAuth()
   @ApiOkResponse({
