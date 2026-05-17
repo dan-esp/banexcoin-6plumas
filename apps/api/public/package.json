@@ -6,7 +6,9 @@
     "postinstall": "bun run prisma:generate"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.9",
     "@prisma/client": "6.9.0",
+    "@scalar/hono-api-reference": "^0.10.16",
     "hono": "^4.12.19"
   },
   "devDependencies": {

@@ -5,8 +5,8 @@
 This is a pnpm-orchestrated polyglot monorepo for BanexReintegra Manager.
 
 - `apps/frontend/`: Next.js 16 + React 19 operations console. Current UI is still a starter shell.
-- `apps/api/private/`: NestJS 11 internal API for planned ETL, validation, cashback calculation, approval, and BanexTransfer export. Current implementation is still a starter shell.
-- `apps/api/public/`: Hono on Bun public API. Current implementation is still a starter shell.
+- `apps/api/private/`: NestJS 11 internal API for planned ETL, validation, cashback calculation, approval, and BanexTransfer export. Current implementation is still mostly a starter shell with a global Clerk auth guard.
+- `apps/api/public/`: Hono on Bun public API with Prisma read routes protected by Clerk bearer auth.
 - `apps/api/ai/`: FastAPI + scikit-learn IsolationForest anomaly service. This service already exposes health, train, upload-train, predict, and model-info endpoints.
 - `constitution/`: product authority for mission, roadmap, design, and stack decisions.
 - `specs/feature/`: implementation-facing feature requirements, validation rules, and build plan.
@@ -93,3 +93,5 @@ Git history and CI expect Conventional Commits.
 - Keep source challenge documents in `resources/`.
 - Derived exports should go to ignored output locations unless the team decides otherwise.
 - AI may explain anomalies and summaries, but deterministic cashback calculations belong in the private API.
+- Clerk is the user-auth source. Frontend obtains session tokens and APIs validate `Authorization: Bearer <token>`; keep smoke and API docs endpoints public.
+- BanexReintegra is login-only. Do not add self-service sign-up UI; create or invite users in Clerk Dashboard and reserve route-level role checks for future Clerk org/metadata policies.

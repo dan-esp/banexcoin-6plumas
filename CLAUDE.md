@@ -67,12 +67,13 @@ uv run ruff check .
 ### Services
 
 - **private (Nest)** — internal API: file ingestion (CSV/XLSX), tier classification, cashback
-  calculations, BanexTransfer export. Talks to Postgres `private-database`.
-- **public (Hono)** — thin public-facing API on Bun. Auth proxy + read-only views.
+  calculations, BanexTransfer export. User auth is Clerk bearer-token validation.
+- **public (Hono)** — thin public-facing API on Bun. Clerk-protected read-only views.
 - **ai (FastAPI)** — IsolationForest anomaly detection over QR transactions. Stateless HTTP API,
-  model persisted to a volume (`MODEL_PATH`).
+  model persisted to a volume (`MODEL_PATH`) and protected with Clerk JWKS except `/health`.
 - **frontend (Next)** — ops console for uploading reports, reviewing tiers/reintegros, and
-  inspecting anomalies surfaced by the AI service.
+  inspecting anomalies surfaced by backend services. Clerk owns sign-in/session UX; the app is
+  login-only and does not expose self-service sign-up.
 
 ### AI service contract
 

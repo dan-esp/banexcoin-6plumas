@@ -1,69 +1,75 @@
 import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
+import { Scalar } from '@scalar/hono-api-reference'
+import { accountRoutes } from './accounts/routes'
+import { getAuth, requireAuth } from './auth/clerk'
+import { batchRoutes } from './batches/routes'
 import { prisma } from './db/client'
+import { healthRoutes } from './health/routes'
+import { legacyRoutes } from './legacy/routes'
+import { openApiDocument } from './openapi'
+import { HttpError } from './shared/http-error'
 
 const app = new Hono()
 
-app.get('/', (c) => c.json({ service: 'banexcoin-public-api', status: 'ok' }))
+app.route('/health', healthRoutes)
+app.get('/openapi.json', (c) => c.json(openApiDocument))
+app.get(
+  '/docs',
+  Scalar({
+    pageTitle: 'BanexReintegra Public API Docs',
+    url: '/openapi.json',
+  }),
+)
 
-app.get('/users', async (c) => {
-  const users = await prisma.user.findMany({
-    select: { account_number: true, alias: true, created_at: true },
-  })
-  return c.json(users)
-})
-
-app.get('/users/:account_number', async (c) => {
-  const account_number = Number(c.req.param('account_number'))
-  const user = await prisma.user.findUnique({
-    where: { account_number },
-    select: { account_number: true, alias: true, created_at: true },
-  })
-  if (!user) return c.json({ error: 'not found' }, 404)
-  return c.json(user)
-})
-
-app.get('/transactions', async (c) => {
-  const account_number = c.req.query('account_number')
-  const transactions = await prisma.transaction.findMany({
-    where: account_number ? { account_number: Number(account_number) } : undefined,
-    orderBy: { fecha_creacion: 'desc' },
-    take: 200,
-  })
-  return c.json(transactions)
-})
-
-app.get('/monthly-aggregations', async (c) => {
-  const account_number = c.req.query('account_number')
-  const aggs = await prisma.monthlyAggregation.findMany({
-    where: account_number ? { account_number: Number(account_number) } : undefined,
-    orderBy: [{ year: 'desc' }, { month: 'desc' }],
-  })
-  return c.json(aggs)
-})
-
-app.get('/cashback-runs', async (c) => {
-  const runs = await prisma.cashbackRun.findMany({
-    orderBy: { created_at: 'desc' },
-    select: {
-      id: true,
-      year: true,
-      month: true,
-      status: true,
-      total_users: true,
-      total_cashback_usdt: true,
-      created_at: true,
+app.get('/', (c) =>
+  c.json({
+    service: 'banexcoin-public-api',
+    status: 'ok',
+    role: 'read-gateway',
+    version: 'v1',
+    links: {
+      health: '/health',
+      batches: '/v1/batches',
     },
   })
-  return c.json(runs)
+)
+
+app.use('*', requireAuth)
+
+app.get('/auth/session', (c) => {
+  const auth = getAuth(c)
+  return c.json({ userId: auth?.userId, sessionId: auth?.sessionId })
 })
 
-app.get('/cashback-runs/:id/disbursements', async (c) => {
-  const cashback_run_id = c.req.param('id')
-  const list = await prisma.disbursement.findMany({
-    where: { cashback_run_id },
-    orderBy: { alias: 'asc' },
-  })
-  return c.json(list)
+app.route('/v1/batches', batchRoutes)
+app.route('/v1/accounts', accountRoutes)
+app.route('/', legacyRoutes)
+
+app.notFound((c) =>
+  c.json({ error: { code: 'not_found', message: 'route not found' } }, 404)
+)
+
+app.onError((error, c) => {
+  if (error instanceof HttpError) {
+    return c.json(
+      { error: { code: error.code, message: error.message } },
+      error.status
+    )
+  }
+
+  if (error instanceof HTTPException) {
+    return c.json(
+      { error: { code: 'bad_request', message: error.message } },
+      error.status
+    )
+  }
+
+  console.error(error)
+  return c.json(
+    { error: { code: 'internal_error', message: 'unexpected public api error' } },
+    500
+  )
 })
 
 process.on('SIGTERM', () => prisma.$disconnect())
